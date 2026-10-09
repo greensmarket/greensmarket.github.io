@@ -757,7 +757,7 @@ $("#btnForget").onclick=function(){
   if(!this.dataset.armed){ this.dataset.armed="1"; this.textContent="¿Borrar “"+p.n+"”? Tocar otra vez"; setTimeout(()=>{ this.textContent="Borrar perfil"; delete this.dataset.armed; },3000); return; }
   const L=perfiles().filter(x=>x.id!==p.id); store.set("perfiles",L); this.textContent="Borrar perfil"; delete this.dataset.armed;
   if(L.length){ store.set("perfilActivo",L[0].id); cargarPerfil(L[0]); showPerfil(true); }
-  else { store.set("perfilActivo",null); store.set("perfil",false); cargarPerfil(null); showPerfil(false); }
+  else { store.set("perfilActivo",null); store.set("perfil",false); store.set("bienvenida",false); cargarPerfil(null); showPerfil(false); }
   toast("Perfil borrado de este teléfono.");
 };
 // Pasar el perfil guardado de la versión anterior a la lista de perfiles
@@ -1277,7 +1277,7 @@ document.addEventListener("dragstart",e=>{ if(e.target.tagName==="IMG") e.preven
   $("#cFecha").value=isoDay(nextDelivery()); $("#cHoy").value=isoDay(new Date()); $("#entregaTxt").textContent="Entrega: "+fechaTxt().replace(",","");
   if(store.get("last")) $("#repeatBox").hidden=false;
   { const p=activo(); if(p&&store.get("perfil")!==false){ cargarPerfil(p); showPerfil(true); } else showPerfil(false); }
-  if(!perfiles().length && !store.get("bienvenida") && !datosOk()) abrirBienvenida();
+  if(/[?&]bienvenida\b/.test(location.search) || (!perfiles().length && !store.get("bienvenida") && !datosOk())) abrirBienvenida();
   renderAisles(); refresh(); netBanner();
 })();
 </script>

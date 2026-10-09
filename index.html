@@ -188,7 +188,9 @@ input[type="date"]::-webkit-date-and-time-value{text-align:left}
 .list{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .row{display:flex;align-items:center;gap:10px;padding:11px 12px;border-top:1px solid var(--line)}
 .row:first-child{border-top:0}
-.row.picked{background:var(--leaf-soft)}
+.row.picked{background:var(--leaf-soft);flex-wrap:wrap}
+.pnote{flex-basis:100%;height:38px;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:0 12px;font-size:.88rem;color:var(--ink);-webkit-user-select:text;user-select:text}
+.pnote::placeholder{color:var(--muted)}
 .info{flex:1;min-width:0}
 .name{font-weight:600;line-height:1.25}
 .alias{color:var(--muted);font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -660,10 +662,18 @@ function rowEl(p){
     const ctl=document.createElement("div"); ctl.className="ctl";
     ctl.append(stepper(it, ()=>{ delete cart[p.id]; }), removeBtn(p.n, ()=>{ delete cart[p.id]; }));
     row.appendChild(ctl);
+    row.appendChild(noteEl(it,p.n));
   }
   return row;
 }
 const pendingUnit = {};
+// Nota debajo del producto escogido (ej. bien maduros, deshojada)
+function noteEl(it,label){
+  const n=document.createElement("input"); n.className="pnote"; n.type="text"; n.maxLength=80;
+  n.placeholder="Nota (ej. bien maduros, deshojada)"; n.value=it.note||""; n.setAttribute("aria-label","Nota para "+label);
+  n.oninput=()=>{ it.note=n.value; save(); updateLinks(); };
+  return n;
+}
 
 function removeBtn(label,onRemove){
   const b=document.createElement("button"); b.className="rm"; b.setAttribute("aria-label","Quitar "+label+" del pedido"); b.title="Quitar";
@@ -706,7 +716,7 @@ function renderCatalog(){
     custom.forEach((c,i)=>{
       const row=document.createElement("div"); row.className="row picked";
       const info=document.createElement("div"); info.className="info"; info.innerHTML=`<div class="name"></div>`; info.firstChild.textContent=c.n;
-      row.appendChild(info); const ctl=document.createElement("div"); ctl.className="ctl"; ctl.append(stepper(c,()=>{ custom.splice(i,1); }), removeBtn(c.n,()=>{ custom.splice(i,1); })); row.appendChild(ctl);
+      row.appendChild(info); const ctl=document.createElement("div"); ctl.className="ctl"; ctl.append(stepper(c,()=>{ custom.splice(i,1); }), removeBtn(c.n,()=>{ custom.splice(i,1); })); row.appendChild(ctl); row.appendChild(noteEl(c,c.n));
       sec.lastChild.appendChild(row);
     });
     root.appendChild(sec);

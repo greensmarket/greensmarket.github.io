@@ -264,7 +264,16 @@ input[type="date"]::-webkit-date-and-time-value{text-align:left}
 .btn.wa{background:var(--leaf);color:var(--leaf-ink);grid-column:1/-1}
 .btn.sec2{background:var(--sunk);color:var(--ink)}
 .msgbox{width:100%;min-height:140px;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:10px;font-size:.8rem;font-family:ui-monospace,Menlo,monospace;margin-top:10px}
-.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:600;font-size:.88rem;z-index:30}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:10px;width:max-content;max-width:calc(100vw - 32px);box-sizing:border-box;background:rgba(19,32,24,.84);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);color:#fff;border-radius:20px;border-left:4px solid #B1C135;padding:9px 18px 9px 9px;box-shadow:0 10px 30px rgba(0,0,0,.25);font-weight:600;font-size:.92rem;line-height:1.3;pointer-events:none}
+.toast .t-ic{width:26px;height:26px;border-radius:999px;background:#B1C135;color:#132018;display:grid;place-items:center;flex:none}
+.toast .t-ic svg{width:15px;height:15px}
+.toast.warn{border-left-color:#F2A65A}
+.toast.warn .t-ic{background:#F2A65A}
+.toast:not([hidden]){animation:toastIn .28s cubic-bezier(.2,.9,.3,1.2)}
+.toast.out{animation:toastOut .22s ease-in forwards}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,14px) scale(.96)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
+@keyframes toastOut{to{opacity:0;transform:translate(-50%,10px)}}
+@media (prefers-reduced-motion:reduce){.toast:not([hidden]),.toast.out{animation:none}}
 
 /* route */
 .route p.lead{color:var(--muted);margin:4px 0 12px}
@@ -984,7 +993,11 @@ function copy(text,ok){
   };
   try{ navigator.clipboard.writeText(text).then(()=>toast(ok),fallback); }catch(e){ fallback(); }
 }
-let tt; function toast(t){ const el=$("#toast"); el.textContent=t; el.hidden=false; clearTimeout(tt); tt=setTimeout(()=>el.hidden=true,2600); }
+let tt,tt2; function toast(t){ const el=$("#toast"); const warn=/^(para |no |sin |falta|complete|escriba|ojo)/i.test(String(t).trim());
+  el.className="toast"+(warn?" warn":""); el.setAttribute("role","status"); el.innerHTML='<span class="t-ic" aria-hidden="true"></span><span class="t-tx"></span>';
+  el.firstChild.innerHTML=warn?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 7v6M12 17h.01"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  el.lastChild.textContent=t; el.hidden=true; void el.offsetWidth; el.hidden=false; clearTimeout(tt); clearTimeout(tt2);
+  tt=setTimeout(()=>{ el.classList.add("out"); tt2=setTimeout(()=>{ el.hidden=true; el.classList.remove("out"); },230); }, warn?3600:2600); }
 
 // ===== Repetir último =====
 $("#btnRepeat").onclick=()=>{

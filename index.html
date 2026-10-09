@@ -131,21 +131,20 @@ input[type="date"]::-webkit-date-and-time-value{text-align:left}
 .actions .btn.send{display:flex;align-items:center;justify-content:center;gap:10px;padding:16px;font-size:1.02rem}
 .actions .btn.send svg{width:18px;height:18px}
 
-.profile.pf-dark{background:#16241A;color:#F6F7F2;border:0;border-radius:20px;padding:16px;gap:12px}
+.profile.pf-dark{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:var(--r);padding:14px;gap:12px}
 .pf-top{display:flex;align-items:center;gap:12px}
-.pf-dark .pf-av{background:#C5D63D;color:#16241A}
+.pf-dark .pf-av{background:var(--leaf);color:var(--leaf-ink)}
 .pf-dark .pf-txt{flex:1}
-.pf-dark .pf-txt b{font-family:var(--display);font-weight:800;font-size:1.25rem;letter-spacing:-.01em;color:#F6F7F2}
-.pf-dark .pf-txt span{color:#B9C4B4;font-size:.84rem}
-.pf-cambiar{flex:none;min-height:38px;padding:0 14px;border-radius:999px;border:1px solid #4A5C4E;background:transparent;color:#F6F7F2;font-weight:700;font-size:.85rem}
-.pf-cambiar:active{background:#233427}
+.pf-dark .pf-txt b{font-family:var(--display);font-weight:800;font-size:1.2rem;letter-spacing:-.01em;color:var(--ink)}
+.pf-dark .pf-txt span{color:var(--muted);font-size:.84rem}
+.pf-cambiar{flex:none;min-height:38px;padding:0 14px;border-radius:999px;border:1.5px solid var(--leaf);background:transparent;color:var(--leaf);font-weight:700;font-size:.85rem}
+.pf-cambiar:active{background:var(--leaf-soft)}
 .pf-tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.pf-tile{border-radius:14px;background:#233427;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
-.pf-tile span{font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;color:#9FB09A}
+.pf-tile{border-radius:12px;background:var(--sunk);padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.pf-tile span{font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .pf-tile b{font-size:.92rem;font-weight:600}
-.pf-tile.lime{background:#C5D63D;color:#16241A}
-.pf-tile.lime span{color:#3D4A12}
-.pf-tile.lime b{font-weight:800}
+.pf-tile.lime{background:var(--leaf-soft)}
+.pf-tile.lime b{color:var(--leaf);font-weight:800}
 .pk-act{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
 
 .pk-help{margin:0 0 12px;color:var(--muted);font-size:.9rem}

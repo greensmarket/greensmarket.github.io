@@ -123,8 +123,8 @@ input[type="date"]::-webkit-date-and-time-value{text-align:left}
 .rv .rq{min-width:74px;font-weight:800;color:var(--leaf);font-size:.98rem}
 .rv .rtx{display:flex;flex-direction:column;gap:1px;flex:1;min-width:0}
 .rv .rn{font-weight:600}
-.rv .rnote{border:0;border-bottom:1px dashed transparent;background:transparent;padding:2px 0;font-size:.8rem;color:var(--muted);width:100%}
-.rv .rnote:focus{border-bottom-color:var(--line);outline:0}
+.rv .rnote{border:0;border-bottom:1px dashed var(--line);background:transparent;padding:2px 0;font-size:.8rem;color:var(--muted);width:100%}
+.rv .rnote:focus{border-bottom-color:var(--leaf);outline:0}
 .rv .rdel{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--muted);padding:0;flex:none}
 .rv .rdel svg{width:16px;height:16px}
 .actions .btn.sec2{padding:12px 8px;font-size:.88rem;white-space:nowrap}
@@ -684,7 +684,6 @@ function rowEl(p){
     const ctl=document.createElement("div"); ctl.className="ctl";
     ctl.append(stepper(it, ()=>{ delete cart[p.id]; }), removeBtn(p.n, ()=>{ delete cart[p.id]; }));
     row.appendChild(ctl);
-    row.appendChild(noteEl(it,p.n));
   }
   return row;
 }
@@ -738,7 +737,7 @@ function renderCatalog(){
     custom.forEach((c,i)=>{
       const row=document.createElement("div"); row.className="row picked";
       const info=document.createElement("div"); info.className="info"; info.innerHTML=`<div class="name"></div>`; info.firstChild.textContent=c.n;
-      row.appendChild(info); const ctl=document.createElement("div"); ctl.className="ctl"; ctl.append(stepper(c,()=>{ custom.splice(i,1); }), removeBtn(c.n,()=>{ custom.splice(i,1); })); row.appendChild(ctl); row.appendChild(noteEl(c,c.n));
+      row.appendChild(info); const ctl=document.createElement("div"); ctl.className="ctl"; ctl.append(stepper(c,()=>{ custom.splice(i,1); }), removeBtn(c.n,()=>{ custom.splice(i,1); })); row.appendChild(ctl);
       sec.lastChild.appendChild(row);
     });
     root.appendChild(sec);
@@ -922,7 +921,7 @@ function renderReview(){
     g.its.forEach(it=>{
       const src = it.id && cart[it.id] ? cart[it.id] : custom.find(c=>c.id===it.id);
       const l=document.createElement("div"); l.className="rline";
-      l.innerHTML=`<span class="rq"></span><span class="rtx"><span class="rn"></span><input class="rnote" placeholder="Agregar nota"></span><button class="rdel" aria-label="Quitar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>`;
+      l.innerHTML=`<span class="rq"></span><span class="rtx"><span class="rn"></span><input class="rnote" placeholder="Nota (ej. bien maduros, deshojada)"></span><button class="rdel" aria-label="Quitar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>`;
       l.querySelector(".rq").textContent=`${fmtQ(it.q)} ${unitLabel(it.u,it.q)}`;
       l.querySelector(".rn").textContent=it.n;
       l.querySelector(".rdel").setAttribute("aria-label","Quitar "+it.n);

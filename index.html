@@ -91,6 +91,11 @@ input[type="date"]::-webkit-date-and-time-value{text-align:left}
 .pf-save{grid-column:1/-1;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .pf-save span{color:var(--muted);font-size:.8rem}
 .pf-save .btn{grid-column:auto}
+.pf-list{flex-basis:100%;display:flex;gap:6px;overflow-x:auto;padding-top:8px;border-top:1px solid var(--line);scrollbar-width:none}
+.pf-list::-webkit-scrollbar{display:none}
+.pf-chip{flex:none;border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:6px 12px;font-size:.82rem;font-weight:600;color:var(--ink);white-space:nowrap}
+.pf-chip.on{background:var(--leaf);border-color:var(--leaf);color:var(--leaf-ink)}
+.pf-chip.add{border-style:dashed;color:var(--leaf);background:transparent}
 .repeat{margin-top:10px}
 
 .field .req{color:var(--danger)}
@@ -258,7 +263,8 @@ img{-webkit-user-drag:none;pointer-events:none}
     </section>
     <section class="profile" id="profileCard" hidden aria-label="Mis datos">
       <div class="pf-main"><div class="pf-av" aria-hidden="true" id="pfAv"></div><div class="pf-txt"><b id="pfHola"></b><span id="pfDatos"></span><span class="pf-ent" id="pfEnt"></span></div></div>
-      <div class="pf-act"><button class="ghost" id="btnEditPf">Cambiar mis datos</button><button class="linkbtn" id="btnForget">No soy yo</button></div>
+      <div class="pf-act"><button class="ghost" id="btnEditPf">Editar</button><button class="linkbtn" id="btnForget">Borrar perfil</button></div>
+      <div class="pf-list" id="pfList" aria-label="Cambiar de perfil"></div>
     </section>
     <section class="client" id="clientForm" aria-label="Datos del pedido">
       <div class="field"><label for="cNegocio">Negocio <span class="req">*</span></label><input id="cNegocio" placeholder="Ej. Restaurante, hotel, panadería" autocomplete="organization"></div>
@@ -266,7 +272,7 @@ img{-webkit-user-drag:none;pointer-events:none}
       <div class="field"><label for="cHoy">Fecha de pedido</label><input id="cHoy" type="date" readonly aria-readonly="true"><small class="hint" id="entregaTxt"></small><input type="hidden" id="cFecha"></div>
       <div class="field"><label for="cNombre">Quién pide <span class="req">*</span></label><input id="cNombre" placeholder="Nombre" autocomplete="name"></div>
       <div class="field"><label for="cTel">Celular (WhatsApp) <span class="req">*</span></label><input id="cTel" type="tel" inputmode="tel" placeholder="8888 8888" autocomplete="tel"></div>
-      <div class="pf-save"><button class="btn wa small" id="btnSavePf" type="button">✓ Guardar mis datos</button><span>Se guardan solo en este teléfono. La próxima vez ya estarán listos.</span></div>
+      <div class="pf-save"><button class="btn wa small" id="btnSavePf" type="button">✓ Guardar perfil</button><button class="btn sec2 small" id="btnCancelPf" type="button" hidden>Cancelar</button><span>Se guarda solo en este teléfono. La próxima vez ya estará listo.</span></div>
     </section>
     <div class="repeat" id="repeatBox" hidden><button class="ghost" id="btnRepeat">↻ Repetir mi último pedido</button></div>
 
@@ -664,22 +670,55 @@ function isAdditional(){ const s=store.get("sent")||{}; return !!s[sentKey()]; }
 function markSent(){ const s=store.get("sent")||{}; s[sentKey()]=(s[sentKey()]||0)+1; const k=Object.keys(s).sort().slice(-60); store.set("sent",Object.fromEntries(k.map(x=>[x,s[x]]))); }
 
 
-// ===== Mi perfil (solo en este teléfono) =====
+// ===== Perfiles (solo en este teléfono) =====
+// gm_perfiles: [{id,n,p,t}] · gm_perfilActivo: id · gm_perfil: true si se muestra la tarjeta
 function datosOk(){ return $("#cNegocio").value.trim() && $("#cNombre").value.trim() && $("#cTel").value.replace(/\D/g,"").length>=8; }
+const perfiles=()=>store.get("perfiles")||[];
+const activo=()=>{ const id=store.get("perfilActivo"); return perfiles().find(p=>p.id===id)||null; };
+let pfModo=null; // "nuevo" | "editar" | null
+function cargarPerfil(p){ $("#cNegocio").value=p?p.n:""; $("#cNombre").value=p?p.p:""; $("#cTel").value=p?p.t:""; $("#cArea").value=""; ["cNegocio","cNombre","cTel"].forEach(id=>$("#"+id).classList.remove("bad")); save(); }
 function showPerfil(on){
+  const p=activo(); on=on&&!!p;
   $("#profileCard").hidden=!on; $("#clientForm").hidden=on;
-  if(on){ const n=$("#cNombre").value.trim(), neg=$("#cNegocio").value.trim();
-    $("#pfAv").textContent=(n||neg||"?").trim().charAt(0).toUpperCase();
-    $("#pfHola").textContent="Hola, "+(n.split(" ")[0]||neg);
-    $("#pfDatos").textContent=neg+" · "+$("#cTel").value.trim();
-    $("#pfEnt").textContent="Pedido de hoy · Entrega: "+fechaTxt().replace(",",""); }
+  $("#btnCancelPf").hidden=!(perfiles().length && !on);
+  $("#btnSavePf").textContent=pfModo==="editar"?"✓ Guardar cambios":"✓ Guardar perfil";
+  if(on){
+    $("#pfAv").textContent=(p.p||p.n||"?").trim().charAt(0).toUpperCase();
+    $("#pfHola").textContent="Hola, "+(p.p.split(" ")[0]||p.n);
+    $("#pfDatos").textContent=p.n+" · "+p.t;
+    $("#pfEnt").textContent="Pedido de hoy · Entrega: "+fechaTxt().replace(",","");
+    const L=$("#pfList"); L.innerHTML="";
+    perfiles().forEach(x=>{ const b=document.createElement("button"); b.type="button"; b.className="pf-chip"+(x.id===p.id?" on":""); b.textContent=x.n+(x.p?" · "+x.p.split(" ")[0]:""); b.setAttribute("aria-pressed",String(x.id===p.id));
+      b.onclick=()=>{ if(x.id===p.id) return; store.set("perfilActivo",x.id); cargarPerfil(x); showPerfil(true); updateLinks(); toast("Perfil: "+x.n); }; L.appendChild(b); });
+    const a=document.createElement("button"); a.type="button"; a.className="pf-chip add"; a.textContent="+ Agregar perfil"; a.onclick=nuevoPerfil; L.appendChild(a);
+  }
 }
-function guardarPerfil(){ if(!datosOk()){ marcarFaltan(); return false; } save(); store.set("perfil",true); showPerfil(true); return true; }
-$("#btnSavePf").onclick=()=>{ if(guardarPerfil()) toast("Listo. Sus datos quedaron guardados en este teléfono."); };
-$("#btnEditPf").onclick=()=>{ store.set("perfil",false); showPerfil(false); $("#cNegocio").focus(); };
+function nuevoPerfil(){ pfModo="nuevo"; store.set("perfil",false); cargarPerfil(null); showPerfil(false); $("#cNegocio").focus(); }
+function guardarPerfil(){
+  if(!datosOk()){ marcarFaltan(); return false; }
+  const d={n:$("#cNegocio").value.trim(),p:$("#cNombre").value.trim(),t:$("#cTel").value.trim()};
+  let L=perfiles(); const act=activo();
+  // si ya existe uno con el mismo negocio y nombre, se actualiza en vez de duplicar
+  const igual=L.find(x=>norm(x.n)===norm(d.n)&&norm(x.p)===norm(d.p));
+  let id;
+  if(pfModo==="editar"&&act){ id=act.id; L=L.map(x=>x.id===id?{...x,...d}:x); }
+  else if(igual){ id=igual.id; L=L.map(x=>x.id===id?{...x,...d}:x); }
+  else { id="p"+Date.now().toString(36); L.push({id,...d}); }
+  store.set("perfiles",L); store.set("perfilActivo",id); store.set("perfil",true); pfModo=null; save(); showPerfil(true); return true;
+}
+$("#btnSavePf").onclick=()=>{ const n=perfiles().length; if(guardarPerfil()) toast(perfiles().length>n?"Perfil guardado en este teléfono.":"Cambios guardados."); };
+$("#btnCancelPf").onclick=()=>{ pfModo=null; const p=activo(); cargarPerfil(p); store.set("perfil",!!p); showPerfil(!!p); };
+$("#btnEditPf").onclick=()=>{ pfModo="editar"; store.set("perfil",false); showPerfil(false); $("#cNegocio").focus(); };
 $("#btnForget").onclick=function(){
-  if(!this.dataset.armed){ this.dataset.armed="1"; this.textContent="¿Borrar mis datos? Tocar otra vez"; setTimeout(()=>{ this.textContent="No soy yo"; delete this.dataset.armed; },3000); return; }
-  ["cNegocio","cNombre","cTel"].forEach(id=>$("#"+id).value=""); store.set("perfil",false); save(); showPerfil(false); this.textContent="No soy yo"; delete this.dataset.armed; toast("Datos borrados de este teléfono."); $("#cNegocio").focus(); };
+  const p=activo(); if(!p) return;
+  if(!this.dataset.armed){ this.dataset.armed="1"; this.textContent="¿Borrar “"+p.n+"”? Tocar otra vez"; setTimeout(()=>{ this.textContent="Borrar perfil"; delete this.dataset.armed; },3000); return; }
+  const L=perfiles().filter(x=>x.id!==p.id); store.set("perfiles",L); this.textContent="Borrar perfil"; delete this.dataset.armed;
+  if(L.length){ store.set("perfilActivo",L[0].id); cargarPerfil(L[0]); showPerfil(true); }
+  else { store.set("perfilActivo",null); store.set("perfil",false); cargarPerfil(null); showPerfil(false); }
+  toast("Perfil borrado de este teléfono.");
+};
+// Pasar el perfil guardado de la versión anterior a la lista de perfiles
+(function(){ if(perfiles().length) return; const c=store.get("client"); if(c&&c.n&&c.p&&String(c.t||"").replace(/\D/g,"").length>=8){ const id="p"+Date.now().toString(36); store.set("perfiles",[{id,n:c.n,p:c.p,t:c.t}]); store.set("perfilActivo",id); } })();
 // ===== Datos obligatorios =====
 function faltan(){ const m=[];
   if(!$("#cNegocio").value.trim()) m.push(["cNegocio","Negocio"]);
@@ -736,7 +775,7 @@ document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&!$("#scrim").hidde
 $("#btnSend").addEventListener("click",e=>{
   if(navigator.onLine===false){ e.preventDefault(); toast("Sin señal. Su pedido quedó guardado; envíelo cuando vuelva la conexión."); return; }
   if(marcarFaltan()){ e.preventDefault(); return; }
-  store.set("perfil",true); setTimeout(()=>showPerfil(true),400);
+  setTimeout(()=>guardarPerfil(),400);
   store.set("last",{cart,custom}); markSent(); setTimeout(()=>{ toast("Toque “Enviar” en la página que se abrió para confirmar"); },700);
 });
 $("#btnWA").addEventListener("click",e=>{ if(marcarFaltan()){ e.preventDefault(); return; } store.set("last",{cart,custom}); setTimeout(()=>toast("Si WhatsApp no abrió, use “Copiar pedido”"),900); });
@@ -1180,7 +1219,7 @@ document.addEventListener("dragstart",e=>{ if(e.target.tagName==="IMG") e.preven
   const c=store.get("client"); if(c){ $("#cNegocio").value=c.n||""; $("#cArea").value=""; $("#cNombre").value=c.p||""; $("#cTel").value=c.t||""; }
   $("#cFecha").value=isoDay(nextDelivery()); $("#cHoy").value=isoDay(new Date()); $("#entregaTxt").textContent="Entrega: "+fechaTxt().replace(",","");
   if(store.get("last")) $("#repeatBox").hidden=false;
-  showPerfil(!!store.get("perfil") && !!datosOk());
+  { const p=activo(); if(p&&store.get("perfil")!==false){ cargarPerfil(p); showPerfil(true); } else showPerfil(false); }
   renderAisles(); refresh(); netBanner();
 })();
 </script>

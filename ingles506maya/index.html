@@ -1,0 +1,1092 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Inglés con Maya</title>
+<meta name="description" content="Tu compañera diaria para hablar inglés: conversación, correcciones, pronunciación y repaso.">
+<meta name="theme-color" content="#211F20">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Maya">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Lora:ital,wght@1,400;1,500&family=Noto+Serif+JP:wght@300;500&display=swap">
+<style>
+body{margin:0}img{max-width:100%}[hidden]{display:none!important}
+/* Layout: one-screen app shell — slim header, scrolling content, composer + bottom tab bar (phone-first, 720px max) */
+:root{
+  --bg:#F6F2EA; --surface:#FFFDF8; --sunk:#EDE7DC; --fg:#211F20; --muted:#6E6863; --line:#DDD5C8;
+  --accent:#D73646; --accent-ink:#FFFFFF; --accent-soft:#F7DDE0;
+  --good:#2F7D5B; --good-soft:#DDEFE5; --warn:#B66A12; --warn-soft:#F6E7D1;
+  --bubble-me:#211F20; --bubble-me-ink:#F6F2EA;
+  --f-display:"Noto Serif JP","Hiragino Mincho ProN",Georgia,serif;
+  --f-accent:"Lora",Georgia,serif;
+  --f-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#171516; --surface:#211F20; --sunk:#2B2829; --fg:#F2EDE4; --muted:#A39C95; --line:#3A3637;
+  --accent:#E5505F; --accent-ink:#FFFFFF; --accent-soft:#3D2226;
+  --good:#5DBB8E; --good-soft:#1E3329; --warn:#E3A24F; --warn-soft:#3A2C19;
+  --bubble-me:#F2EDE4; --bubble-me-ink:#211F20; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#171516; --surface:#211F20; --sunk:#2B2829; --fg:#F2EDE4; --muted:#A39C95; --line:#3A3637;
+  --accent:#E5505F; --accent-ink:#FFFFFF; --accent-soft:#3D2226;
+  --good:#5DBB8E; --good-soft:#1E3329; --warn:#E3A24F; --warn-soft:#3A2C19;
+  --bubble-me:#F2EDE4; --bubble-me-ink:#211F20; color-scheme:dark}
+
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{height:100%;max-width:720px;margin:0 auto;display:flex;flex-direction:column;background:var(--bg)}
+
+/* header */
+.top{display:flex;align-items:center;gap:12px;padding:12px 16px 10px;border-bottom:1px solid var(--line)}
+.avatar{width:40px;height:40px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--fg);color:var(--bg);font-family:var(--f-display);font-size:18px;position:relative}
+.avatar::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--accent);border-right-color:transparent;transform:rotate(-30deg)}
+.who{min-width:0;flex:1}
+.who b{display:block;font-family:var(--f-display);font-weight:500;font-size:17px;line-height:1.2}
+.who span{font-size:12px;color:var(--muted)}
+.stat{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.ring{width:30px;height:30px}
+.iconbtn{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:var(--muted)}
+.iconbtn:hover{background:var(--sunk);color:var(--fg)}
+svg.i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+
+main{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.view{padding:16px;display:flex;flex-direction:column;gap:14px}
+.view[hidden]{display:none!important}
+
+/* chat */
+#chat{padding-bottom:8px}
+.scene-bar{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r);background:var(--accent-soft);font-size:13px}
+.scene-bar b{font-weight:600}
+.scene-bar .grow{flex:1;min-width:0}
+.scene-bar button{font-size:12px;font-weight:600;color:var(--accent);padding:4px 8px}
+.msg{display:flex;flex-direction:column;gap:6px;max-width:88%}
+.msg.me{align-self:flex-end;align-items:flex-end}
+.bubble{padding:10px 14px;border-radius:18px;font-size:16px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
+.me .bubble{background:var(--bubble-me);color:var(--bubble-me-ink);border-bottom-right-radius:6px}
+.ai .bubble{background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:6px}
+.es{font-size:14px;color:var(--muted);padding:0 4px;font-family:var(--f-accent);font-style:italic}
+.tools{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;padding:5px 10px;border-radius:999px;background:var(--sunk);color:var(--fg)}
+.chip svg.i{width:14px;height:14px}
+.chip.on{background:var(--good-soft);color:var(--good)}
+.fb{border-radius:12px;padding:10px 12px;font-size:14px;display:flex;flex-direction:column;gap:4px;max-width:100%;border:1px solid transparent}
+.fb .lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.fb .better{font-size:16px;font-weight:500;color:var(--fg)}
+.fb .why{color:var(--muted);font-size:13px}
+.fb.spanish{background:var(--accent-soft)} .fb.spanish .lbl{color:var(--accent)}
+.fb.correction{background:var(--warn-soft)} .fb.correction .lbl{color:var(--warn)}
+.fb.great{background:var(--good-soft)} .fb.great .lbl{color:var(--good)}
+.fb.pronunciation{background:var(--accent-soft);border-color:var(--accent)} .fb.pronunciation .lbl{color:var(--accent)}
+.fb .whyfirst{color:var(--fg);font-size:14px}
+.fb .en-lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:4px}
+.fb .row{display:flex;gap:8px;align-items:flex-start}
+.fb .row .grow{flex:1;min-width:0}
+.explain{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:14px;white-space:pre-wrap}
+.explain .lbl{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--muted);margin-bottom:4px}
+.pron{font-size:14px;color:var(--fg);padding:6px 10px;border-radius:10px;background:var(--sunk);letter-spacing:.02em;overflow-wrap:anywhere}
+.pron .pl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-right:6px}
+.pron .tip{display:block;font-size:12px;color:var(--muted);margin-top:2px;letter-spacing:0}
+.fb .pron{background:color-mix(in srgb,var(--surface) 70%,transparent)}
+.typing{display:inline-flex;gap:4px;padding:14px 16px}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:b 1.2s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes b{0%,60%,100%{opacity:.25;transform:none}30%{opacity:1;transform:translateY(-3px)}}
+.sys{align-self:center;font-size:12px;color:var(--muted);text-align:center;max-width:90%}
+.starters{display:flex;gap:8px;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none}
+.starters::-webkit-scrollbar{display:none}
+.starters button{flex:none;font-size:13px;padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface)}
+
+.composer{display:flex;align-items:flex-end;gap:8px;padding:10px 12px;border-top:1px solid var(--line);background:var(--bg)}
+.composer textarea{flex:1;min-width:0;resize:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:22px;padding:11px 16px;font:inherit;font-size:16px;line-height:1.35;max-height:140px}
+.send{width:44px;height:44px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink)}
+.send:disabled{opacity:.4}
+.mic{width:44px;height:44px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--sunk)}
+.mic.live{background:var(--accent);color:var(--accent-ink);animation:p 1.4s infinite}
+@keyframes p{50%{box-shadow:0 0 0 8px var(--accent-soft)}}
+.thumb{max-width:220px;border-radius:14px;display:block}
+.pending-photo{display:flex;align-items:center;gap:10px;margin:0 12px 6px;padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--surface);font-size:13px}
+.pending-photo img{width:44px;height:44px;object-fit:cover;border-radius:8px}
+.pending-photo .grow{flex:1;min-width:0}
+.topics-lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:0 12px 4px}
+.summary{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;font-size:14px;white-space:pre-wrap}
+.hint{font-size:12px;color:var(--muted);padding:0 16px 6px;text-align:center}
+
+/* tab bar */
+nav.tabs{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:var(--surface);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav.tabs button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px 9px;font-size:11px;color:var(--muted);font-weight:500}
+nav.tabs button[aria-selected="true"]{color:var(--accent)}
+nav.tabs .badge{position:absolute;margin-left:18px;margin-top:-2px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--accent);color:var(--accent-ink);font-size:10px;line-height:16px}
+
+/* section heads */
+.h{font-family:var(--f-display);font-weight:300;font-size:26px;line-height:1.2;letter-spacing:-.01em;text-wrap:balance;margin:4px 0 0}
+.h em{font-family:var(--f-accent);font-style:italic;color:var(--accent);font-weight:400}
+.sub{color:var(--muted);font-size:14px;margin:-6px 0 0}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:500}
+
+/* scenes */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.card{text-align:left;padding:14px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;gap:6px;min-width:0}
+.card:hover{border-color:var(--fg)}
+.card .k{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.card b{font-weight:600;font-size:15px}
+.card span{font-size:13px;color:var(--muted)}
+.lvl{display:inline-block;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:var(--sunk);color:var(--muted);align-self:flex-start}
+
+/* phrases */
+.pod{background:var(--fg);color:var(--bg);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:8px}
+.pod .eyebrow{color:color-mix(in srgb,var(--bg) 65%,transparent)}
+.pod .en{font-family:var(--f-display);font-size:22px;font-weight:300;line-height:1.3}
+.pod .esx{font-family:var(--f-accent);font-style:italic;opacity:.75}
+.pod .tools .chip{background:color-mix(in srgb,var(--bg) 14%,transparent);color:var(--bg)}
+.cats{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.cats::-webkit-scrollbar{display:none}
+.cats button{flex:none;font-size:13px;padding:6px 12px;border-radius:999px;border:1px solid var(--line)}
+.cats button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.list{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.item{display:flex;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.item .grow{flex:1;min-width:0}
+.item .en{font-size:15px;font-weight:500}
+.item .es{padding:0;font-size:13px}
+
+/* review */
+.flash{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:28px 20px;min-height:230px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center}
+.flash .q{font-family:var(--f-display);font-size:26px;font-weight:300;line-height:1.3}
+.flash .a{font-size:20px;font-weight:500;color:var(--accent)}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{padding:13px 16px;border-radius:12px;font-weight:600;background:var(--sunk);text-align:center}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.dark{background:var(--fg);color:var(--bg)}
+.empty{padding:24px;border:1px dashed var(--line);border-radius:var(--r);text-align:center;color:var(--muted);font-size:14px}
+
+/* progress */
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:2px}
+.tile .n{font-family:var(--f-display);font-size:30px;font-weight:300;font-variant-numeric:tabular-nums;line-height:1.1}
+.tile .l{font-size:12px;color:var(--muted)}
+.tile.hero{grid-column:1/-1;flex-direction:row;align-items:center;gap:16px}
+.tile.hero .n{font-size:44px;color:var(--accent)}
+.bars{display:grid;grid-template-columns:repeat(14,1fr);gap:4px;align-items:end;height:90px;padding-top:8px}
+.bars div{background:var(--sunk);border-radius:3px 3px 0 0;min-height:3px;position:relative}
+.bars div.hit{background:var(--accent)}
+.bars div.today{outline:1.5px solid var(--fg);outline-offset:1px}
+.barlbl{display:grid;grid-template-columns:repeat(14,1fr);gap:4px;font-size:10px;color:var(--muted);text-align:center;font-variant-numeric:tabular-nums}
+.levelbar{height:8px;border-radius:4px;background:var(--sunk);overflow:hidden}
+.levelbar i{display:block;height:100%;background:var(--accent);border-radius:4px}
+.err{padding:10px 0;border-bottom:1px solid var(--line);font-size:14px;display:flex;flex-direction:column;gap:2px}
+.err s{color:var(--muted)}
+.err b{font-weight:500}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.sheet{width:100%;max-width:720px;max-height:90%;overflow:auto;background:var(--bg);border-radius:20px 20px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:13px;font-weight:600}
+.field input,.field select{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:10px;padding:10px 12px;font:inherit;font-size:16px}
+.seg{display:flex;background:var(--sunk);border-radius:10px;padding:3px;gap:3px;flex-wrap:wrap}
+.seg button{flex:1;padding:8px 6px;border-radius:8px;font-size:13px;font-weight:500;min-width:44px}
+.seg button[aria-pressed="true"]{background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.toast{position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:13px;max-width:calc(100% - 32px);z-index:30;text-align:center}
+.small{font-size:12px;color:var(--muted)}
+.voicepill{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 12px 8px;padding:11px;border-radius:999px;background:var(--fg);color:var(--bg);font-weight:600;font-size:14px}
+.voicepill svg.i{width:18px;height:18px}
+/* voice mode */
+.vm{position:fixed;inset:0;z-index:25;background:var(--bg);display:flex;flex-direction:column;align-items:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));gap:14px}
+.vm-top{width:100%;max-width:560px;display:flex;justify-content:space-between;align-items:center}
+.vm-stage{flex:1;min-height:0;width:100%;max-width:560px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;overflow-y:auto;text-align:center}
+.enso{width:150px;height:150px;flex:none;position:relative;display:grid;place-items:center}
+.enso svg{position:absolute;inset:0;width:100%;height:100%}
+.enso b{font-family:var(--f-display);font-weight:300;font-size:46px;color:var(--fg)}
+.enso.talking svg{animation:spin 6s linear infinite}
+.enso.talking::before{content:"";position:absolute;inset:18px;border-radius:50%;background:var(--accent-soft);animation:breathe 1.1s ease-in-out infinite}
+.enso.thinking svg{animation:spin 1.6s linear infinite}
+.enso.listening::before{content:"";position:absolute;inset:10px;border-radius:50%;border:2px solid var(--accent);animation:breathe .9s ease-in-out infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes breathe{50%{transform:scale(1.08)}}
+.vm-state{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.vm-line{font-family:var(--f-display);font-weight:300;font-size:22px;line-height:1.4;text-wrap:balance}
+.vm-es{font-family:var(--f-accent);font-style:italic;color:var(--muted);font-size:15px}
+.vm-input{width:100%;max-width:560px;display:flex;flex-direction:column;gap:8px}
+.vm-input textarea{width:100%;resize:none;border:1.5px solid var(--accent);background:var(--surface);color:var(--fg);border-radius:18px;padding:14px 16px;font:inherit;font-size:17px;min-height:64px}
+.vm-row{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="top">
+    <div class="avatar" id="avatar">M</div>
+    <div class="who"><b id="compName">Maya</b><span id="compSub">Tu compañera de inglés</span></div>
+    <div class="stat" title="Racha de días"><svg class="i" viewBox="0 0 24 24" style="color:var(--accent)"><path d="M12 3c1 3 4 5 4 9a4 4 0 0 1-8 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 0-8z"/></svg><span id="streakN">0</span></div>
+    <svg class="ring" viewBox="0 0 36 36" aria-label="Meta del día"><circle cx="18" cy="18" r="15" stroke="var(--sunk)" stroke-width="4" fill="none"/><circle id="ringArc" cx="18" cy="18" r="15" stroke="var(--accent)" stroke-width="4" fill="none" stroke-linecap="round" stroke-dasharray="94.25" stroke-dashoffset="94.25" transform="rotate(-90 18 18)"/></svg>
+    <button class="iconbtn" id="openSettings" aria-label="Ajustes"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </header>
+
+  <main id="main">
+    <section class="view" id="v-talk">
+      <div id="sceneBar"></div>
+      <div id="chat" style="display:flex;flex-direction:column;gap:14px"></div>
+    </section>
+
+    <section class="view" id="v-scenes" hidden>
+      <div class="eyebrow">Practica situaciones reales</div>
+      <h2 class="h">Escenas para el <em>restaurante</em> y la vida diaria</h2>
+      <p class="sub">Tu compañera hace el papel del cliente, el proveedor o quien toque. Tú respondes como en la vida real.</p>
+      <div class="eyebrow" style="margin-top:6px">Pronunciación difícil</div>
+      <p class="small" style="margin:-8px 0 0">Habla con el micrófono del teclado: si el celular escribe la palabra correcta, la dijiste bien.</p>
+      <div class="grid" id="scenesPron"></div>
+      <div class="eyebrow" style="margin-top:6px">En el restaurante</div>
+      <div class="grid" id="scenesWork"></div>
+      <div class="eyebrow" style="margin-top:6px">Vida diaria</div>
+      <div class="grid" id="scenesLife"></div>
+    </section>
+
+    <section class="view" id="v-phrases" hidden>
+      <div class="pod" id="pod"></div>
+      <h2 class="h">Frases <em>de oro</em></h2>
+      <p class="sub">Lo que más vas a decir en el restaurante. Tócala para escucharla; guárdala para repasarla.</p>
+      <div class="cats" id="cats"></div>
+      <div class="list" id="phraseList"></div>
+    </section>
+
+    <section class="view" id="v-review" hidden></section>
+
+    <section class="view" id="v-progress" hidden></section>
+  </main>
+
+  <div id="composerWrap">
+    <button type="button" class="voicepill" id="voiceBtn"><svg class="i" viewBox="0 0 24 24"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg><span id="voiceLbl">Conversar por voz con Maya</span></button>
+    <div class="topics-lbl" id="topicsLbl">Habla de lo que quieras</div>
+    <div class="starters" id="starters" style="padding:0 12px 6px"></div>
+    <div id="pendingPhoto"></div>
+    <form class="composer" id="composer">
+      <button type="button" class="mic" id="photoBtn" aria-label="Compartir una foto" hidden><svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="15" rx="2"/><circle cx="12" cy="12.5" r="3.5"/><path d="M8 5l1.5-2h5L16 5"/></svg></button>
+      <input type="file" id="photoInput" accept="image/*" hidden>
+      <button type="button" class="mic" id="micBtn" aria-label="Hablar"><svg class="i" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+      <textarea id="input" rows="1" placeholder="Escribe o dicta en inglés o en español…" aria-label="Mensaje"></textarea>
+      <button type="submit" class="send" id="sendBtn" aria-label="Enviar"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6"/></svg></button>
+    </form>
+  </div>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-v="talk" aria-selected="true"><svg class="i" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>Hablar</button>
+    <button role="tab" data-v="scenes" aria-selected="false"><svg class="i" viewBox="0 0 24 24"><path d="M4 6h16v12H4zM4 10h16M9 6v4"/></svg>Escenas</button>
+    <button role="tab" data-v="phrases" aria-selected="false"><svg class="i" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5zM9 9h6M9 13h6M9 17h3"/></svg>Frases</button>
+    <button role="tab" data-v="review" aria-selected="false" style="position:relative"><svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/></svg>Repaso<span class="badge" id="dueBadge" hidden>0</span></button>
+    <button role="tab" data-v="progress" aria-selected="false"><svg class="i" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Progreso</button>
+  </nav>
+</div>
+
+<div id="sheetRoot"></div>
+<div id="toastRoot"></div>
+
+<script>
+(function(){
+"use strict";
+/* ---------- content ---------- */
+const LEVELS=["A1","A2","B1","B2","C1"];
+const LEVEL_TXT={A1:"Empiezo de cero",A2:"Entiendo lo básico",B1:"Me defiendo",B2:"Converso bien",C1:"Casi fluido"};
+const PRON_COACH="You are Miguel's pronunciation coach. He answers using phone VOICE DICTATION in English, so the text you receive is what the phone understood: if it shows a different word than the target (e.g. 'tree' instead of 'three', 'bery' or 'berry' instead of 'very', 'chip' instead of 'cheap'), he mispronounced it; if it matches, he said it clearly — tell him so with enthusiasm. Work ONE short sentence at a time, from easy to harder, using restaurant and Nosara vocabulary. Each turn: say the target sentence in your reply, ask him to say it with the keyboard microphone, then judge his previous attempt in feedback (type great if the dictation matched, correction if not, with why explaining the exact mouth position in Spanish). Always give the exact pronunciation and a precise pron_tip about where to put the tongue, lips or teeth. After 6 sentences, give a short score out of 6 and start a new round.";
+const SCENES=[
+ {id:"pron-th",g:"pron",k:"Acento",t:"El sonido TH",d:"three, thank you, the, this: lengua entre los dientes.",lvl:"A2",
+  role:PRON_COACH+" Target sounds: TH voiceless (three, thank you, think, both) and TH voiced (the, this, there, with), versus T, D, S and F.",
+  open:"Let's train the TH sound! Put the tip of your tongue between your teeth and blow softly. Say this with the keyboard microphone: Thank you so much."},
+ {id:"pron-vb",g:"pron",k:"Acento",t:"V, B, SH y CH",d:"very, vegan, fish, cheese, shrimp, check.",lvl:"A2",
+  role:PRON_COACH+" Target sounds: V (top teeth on lower lip) versus B; SH (fish, shrimp, sure) versus CH (cheese, check, chicken); also final S clusters.",
+  open:"Today we practice V, B, SH and CH. For V, touch your top teeth to your bottom lip. Say this with the keyboard microphone: We have a very good vegan roll."},
+ {id:"pron-vowels",g:"pron",k:"Acento",t:"Vocales y finales",d:"fish/feet, ship/sheep, full/fool, y las consonantes del final.",lvl:"B1",
+  role:PRON_COACH+" Target sounds: short I versus long EE (fish, sheet, eat, it, still, steal), short U versus long OO (full, fool, good, food), schwa in unstressed syllables, and clear final consonants (salad, fresh, cooked, asked, tips).",
+  open:"Let's work on vowels. The I in fish is short and relaxed; the EE in feet is long, with a smile. Say this with the keyboard microphone: The fish is fresh, please eat."},
+ {id:"welcome",g:"work",k:"Recibir",t:"Dar la bienvenida",d:"Una pareja de turistas llega sin reserva un viernes lleno.",lvl:"A2",
+  role:"You are a tourist couple from California arriving at Nosara Sushi 506 on a busy Friday night without a reservation. Miguel is the owner greeting you. Be friendly; ask about wait time, seating at the sushi bar, and if they take walk-ins.",
+  open:"Hi there! Is it just you guys running this place? We don't have a reservation... do you have a table for two?"},
+ {id:"menu",g:"work",k:"Menú",t:"Explicar el menú",d:"Un cliente nunca ha comido sushi y quiere recomendaciones.",lvl:"B1",
+  role:"You are a curious first-time sushi eater from Ohio. Ask Miguel to explain what nigiri, sashimi and rolls are, what is raw, what he recommends, and what is spicy.",
+  open:"Okay, confession: I've never really had sushi. What's the difference between all these things? What would you recommend for a beginner?"},
+ {id:"allergy",g:"work",k:"Alergias",t:"Alergias y dietas",d:"Una clienta con alergia a mariscos y otra vegana.",lvl:"B1",
+  role:"You are a woman with a shellfish allergy dining with a vegan friend. Ask detailed questions about ingredients, cross-contamination, sauces, and vegan options. Be polite but careful.",
+  open:"Before we order, I have a pretty serious shellfish allergy, and my friend is vegan. Is that going to be a problem here?"},
+ {id:"order",g:"work",k:"Pedido",t:"Tomar el pedido",d:"Mesa de cuatro surfistas con hambre y muchas preguntas.",lvl:"A2",
+  role:"You are one of four hungry surfers ordering. Order rolls and drinks, change your mind once, ask for no wasabi on one, and ask how long it takes.",
+  open:"We just got out of the water and we're starving! Can we start with some drinks? What beers do you have?"},
+ {id:"bill",g:"work",k:"Cuenta",t:"Cobrar y propina",d:"Dividir la cuenta, pagar en dólares y preguntar por la propina.",lvl:"A2",
+  role:"You are a tourist paying the bill. Ask to split it three ways, ask if you can pay in US dollars or card, what the exchange rate is, and whether service is included.",
+  open:"Could we get the check, please? And is it possible to split it three ways?"},
+ {id:"complaint",g:"work",k:"Problemas",t:"Manejar una queja",d:"Un plato llegó tarde y frío. El cliente está molesto.",lvl:"B1",
+  role:"You are a customer who waited 40 minutes and your tempura arrived cold. Be annoyed but reasonable; respond to how well Miguel apologizes and fixes it.",
+  open:"Excuse me. We've been waiting forty minutes, and this tempura is cold. Honestly, this isn't great."},
+ {id:"phone",g:"work",k:"Teléfono",t:"Reserva por teléfono",d:"Una llamada para reservar un cumpleaños de diez personas.",lvl:"B1",
+  role:"You are calling to book a birthday dinner for ten people next Saturday. Ask about availability, a cake, decorations, a set menu, and deposit. Speak like on the phone.",
+  open:"Hi, is this Nosara Sushi 506? I'd like to book a table for a birthday dinner next Saturday. There will be about ten of us."},
+ {id:"supplier",g:"work",k:"Proveedores",t:"Negociar con un proveedor",d:"Un proveedor de pescado extranjero ofrece atún y salmón.",lvl:"B2",
+  role:"You are a fish supplier sales rep. Offer tuna and salmon, discuss quality, delivery days to Nosara, minimum orders, prices per kilo, and payment terms. Negotiate.",
+  open:"Thanks for taking the time, Miguel. We can deliver fresh tuna and salmon twice a week. What kind of volume are you thinking for the opening?"},
+ {id:"staff",g:"work",k:"Equipo",t:"Entrevistar a un mesero",d:"Un candidato que solo habla inglés busca trabajo.",lvl:"B1",
+  role:"You are a job candidate (an expat who only speaks English) applying as a server. Answer Miguel's interview questions and ask about schedule, pay, and tips.",
+  open:"Hi, I saw you're hiring servers for the new restaurant. I'd love to hear more about the job!"},
+ {id:"smalltalk",g:"work",k:"Charla",t:"Conversar en la barra",d:"Un cliente en la barra quiere saber de ti, de Nosara y del surf.",lvl:"A2",
+  role:"You are a friendly regular sitting at the sushi bar. Make small talk: Miguel's story, why sushi in Nosara, best surf spots, life in Costa Rica.",
+  open:"This place is awesome. So how did you end up opening a sushi spot in Nosara?"},
+ {id:"airport",g:"life",k:"Viaje",t:"En el aeropuerto",d:"Check-in, maletas y un vuelo con atraso.",lvl:"A2",
+  role:"You are an airline agent at check-in. Ask for passport, bags, seat preference; then tell him the flight is delayed and help rebook.",
+  open:"Good morning! Where are you flying to today? Can I see your passport, please?"},
+ {id:"doctor",g:"life",k:"Salud",t:"En la consulta",d:"Explicar síntomas a un doctor que no habla español.",lvl:"B1",
+  role:"You are a doctor at an international clinic. Ask about symptoms, how long, pain level, medications. Keep it simple and kind.",
+  open:"Hello, I'm Doctor Evans. What brings you in today?"},
+ {id:"friends",g:"life",k:"Social",t:"Hacer amigos",d:"Conocer gente nueva en una fiesta en la playa.",lvl:"A2",
+  role:"You are a friendly traveler at a beach bonfire party in Guiones. Chat casually, ask about him, share about yourself, use natural slang lightly.",
+  open:"Hey! I'm Jess. Are you from around here? I just got to Nosara two days ago."},
+ {id:"bank",g:"life",k:"Trámites",t:"Banco y negocios",d:"Abrir una cuenta de negocio y preguntar por pagos con tarjeta.",lvl:"B2",
+  role:"You are a bank representative (English-speaking branch). Discuss opening a business account, card terminals, fees, and documents required.",
+  open:"Welcome. I understand you'd like to open a business account for your restaurant. Tell me a bit about the business."}
+];
+const PHRASES=[
+ ["Recibir","Welcome! How many people?","¡Bienvenidos! ¿Cuántas personas?"],
+ ["Recibir","Do you have a reservation?","¿Tienen reservación?"],
+ ["Recibir","Would you prefer the bar or a table?","¿Prefieren la barra o una mesa?"],
+ ["Recibir","It'll be about a fifteen-minute wait.","La espera será de unos quince minutos."],
+ ["Recibir","Right this way, please.","Por aquí, por favor."],
+ ["Recibir","Here are your menus. I'll be right back.","Aquí tienen el menú. Ya regreso."],
+ ["Menú","Nigiri is a slice of fish on top of rice.","El nigiri es una lámina de pescado sobre arroz."],
+ ["Menú","Sashimi is just the fish, no rice.","El sashimi es solo el pescado, sin arroz."],
+ ["Menú","This roll is cooked, nothing raw.","Este rollo es cocinado, nada crudo."],
+ ["Menú","Our most popular roll is…","Nuestro rollo más popular es…"],
+ ["Menú","The fish is fresh and local.","El pescado es fresco y local."],
+ ["Menú","It's a little spicy. Is that okay?","Es un poco picante. ¿Está bien?"],
+ ["Alergias","Do you have any allergies?","¿Tienen alguna alergia?"],
+ ["Alergias","This contains shellfish.","Esto contiene mariscos."],
+ ["Alergias","We can make it without sesame.","Lo podemos hacer sin ajonjolí."],
+ ["Alergias","We have vegan and gluten-free options.","Tenemos opciones veganas y sin gluten."],
+ ["Alergias","Let me check with the kitchen.","Déjeme consultar con la cocina."],
+ ["Pedido","Are you ready to order?","¿Están listos para ordenar?"],
+ ["Pedido","What can I get you to drink?","¿Qué les traigo de tomar?"],
+ ["Pedido","Would you like anything else?","¿Desean algo más?"],
+ ["Pedido","Your food will be ready in about twenty minutes.","Su comida estará lista en unos veinte minutos."],
+ ["Pedido","How is everything?","¿Qué tal todo?"],
+ ["Cuenta","Here's your check.","Aquí está su cuenta."],
+ ["Cuenta","Would you like to split the bill?","¿Desean dividir la cuenta?"],
+ ["Cuenta","We take cash, card and dollars.","Aceptamos efectivo, tarjeta y dólares."],
+ ["Cuenta","Service is included in the bill.","El servicio está incluido en la cuenta."],
+ ["Cuenta","Thank you so much! See you next time.","¡Muchas gracias! Nos vemos la próxima."],
+ ["Problemas","I'm so sorry about that.","Lo siento muchísimo."],
+ ["Problemas","Let me fix that for you right away.","Déjeme arreglarlo de inmediato."],
+ ["Problemas","This one is on the house.","Esto corre por cuenta de la casa."],
+ ["Problemas","Thank you for your patience.","Gracias por su paciencia."],
+ ["Equipo","Table four needs water, please.","La mesa cuatro necesita agua, por favor."],
+ ["Equipo","We're running low on salmon.","Nos estamos quedando sin salmón."],
+ ["Equipo","Can you deliver on Tuesdays and Fridays?","¿Pueden entregar martes y viernes?"],
+ ["Charla","I opened this place because I love Nosara.","Abrí este lugar porque amo Nosara."],
+ ["Charla","Where are you from?","¿De dónde son?"],
+ ["Charla","How were the waves today?","¿Cómo estuvieron las olas hoy?"],
+ ["Charla","Pura vida! Enjoy your stay.","¡Pura vida! Disfruten su estadía."]
+];
+const TOPICS=[
+ ["Mi día","Let's talk about my day."],
+ ["Familia","I want to talk about my family."],
+ ["Fútbol","Let's talk about football."],
+ ["Viajes","Let's talk about travel and places I want to visit."],
+ ["Música","Let's talk about music."],
+ ["Películas y series","Let's talk about movies and series."],
+ ["Surf y playa","Let's talk about surfing and the beach."],
+ ["Noticias","Let's talk about something happening in the world."],
+ ["Negocios","Let's talk about business and being an entrepreneur."],
+ ["Comida","Let's talk about food I love."],
+ ["Sueños y metas","Let's talk about my dreams and goals."],
+ ["Salud y deporte","Let's talk about health and exercise."],
+ ["Tecnología","Let's talk about technology and AI."],
+ ["Sorpréndeme","Surprise me with an interesting topic."],
+ ["El restaurante","Let's talk about my restaurants."]
+];
+
+/* ---------- state ---------- */
+const LS_KEY="mi-ingles-v1";
+const today=()=>new Date().toLocaleDateString("en-CA");
+const daysBetween=(a,b)=>Math.round((new Date(b+"T12:00")-new Date(a+"T12:00"))/864e5);
+function fresh(){return{v:1,updatedAt:0,
+  profile:{companion:"Maya",gender:"f",level:"A2",goal:20,speed:0.9,autoSpeak:true,precise:false},
+  xp:0,streak:0,lastDay:"",days:{},words:[],errors:[],chat:[],scene:null,pron:{}};}
+let S=fresh();
+try{const raw=localStorage.getItem(LS_KEY); if(raw){S=Object.assign(fresh(),JSON.parse(raw));}}catch(e){}
+
+let db=null,docRef=null,saveTimer=null,saving=false,saveAgain=false;
+function snapshot(){const c=JSON.parse(JSON.stringify(S));(c.chat||[]).forEach(m=>{delete m.img;});return c;}
+function persist(){
+  S.updatedAt=Date.now();
+  try{localStorage.setItem(LS_KEY,JSON.stringify(snapshot()));}catch(e){}
+  clearTimeout(saveTimer); saveTimer=setTimeout(flush,1500);
+}
+async function flush(){
+  if(!docRef)return;
+  if(saving){saveAgain=true;return;}
+  saving=true;
+  try{await docRef.set(snapshot());}catch(e){}
+  saving=false;
+  if(saveAgain){saveAgain=false;flush();}
+}
+async function connectStore(){
+  try{
+    const user=await claude.use("user"); db=await claude.use("db");
+    if(!user||!db)return;
+    const id=await user.id(); if(!id)return;
+    docRef=db.doc("data/users/"+id+"/state");
+    const snap=await docRef.get();
+    if(snap.exists){
+      const remote=snap.data();
+      if((remote.updatedAt||0)>(S.updatedAt||0)){
+        S=Object.assign(fresh(),JSON.parse(JSON.stringify(remote)));
+        try{localStorage.setItem(LS_KEY,JSON.stringify(S));}catch(e){}
+        renderAll();
+      } else if((S.updatedAt||0)>(remote.updatedAt||0)) flush();
+    } else if(S.updatedAt) flush();
+  }catch(e){}
+}
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+function el(tag,attrs,...kids){const n=document.createElement(tag);
+  if(attrs)for(const k in attrs){const v=attrs[k];if(v==null||v===false)continue;
+    if(k==="class")n.className=v;else if(k==="text")n.textContent=v;else if(k.startsWith("on"))n.addEventListener(k.slice(2),v);else n.setAttribute(k,v===true?"":v);}
+  for(const c of kids.flat()){if(c==null||c===false)continue;n.append(c.nodeType?c:document.createTextNode(String(c)));}
+  return n;}
+const ICON={
+ play:'<path d="M6 4l14 8-14 8z"/>',
+ tr:'<path d="M4 5h8M8 3v2M5 11c2 0 5-2 6-6M6 7c1 2 3 4 6 4M13 21l4-9 4 9M14.5 18h5"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',
+ check:'<path d="M5 12l5 5 9-10"/>'};
+function ic(name){const s=document.createElementNS("http://www.w3.org/2000/svg","svg");s.setAttribute("class","i");s.setAttribute("viewBox","0 0 24 24");s.innerHTML=ICON[name];return s;}
+function toast(msg,ms){const r=$("#toastRoot");r.innerHTML="";const t=el("div",{class:"toast",role:"status",text:msg});r.append(t);setTimeout(()=>{if(t.parentNode)t.remove();},ms||3200);}
+
+/* ---------- voice ---------- */
+let voices=[];
+function loadVoices(){try{voices=speechSynthesis.getVoices().filter(v=>/^en[-_]/i.test(v.lang));}catch(e){}}
+try{loadVoices();speechSynthesis.onvoiceschanged=loadVoices;}catch(e){}
+function pickVoice(){
+  if(!voices.length)return null;
+  const fem=/samantha|ava|allison|susan|zira|jenny|aria|female|karen|moira|serena|victoria|google us english/i;
+  const mal=/alex|daniel|tom|fred|aaron|guy|david|male|nathan|evan/i;
+  const want=S.profile.gender==="f"?fem:mal;
+  const us=voices.filter(v=>/en[-_]US/i.test(v.lang));
+  return us.find(v=>want.test(v.name)&&/premium|enhanced|natural/i.test(v.name))||us.find(v=>want.test(v.name))||voices.find(v=>want.test(v.name))||us[0]||voices[0];
+}
+let onSpeakState=null;
+function speak(text,rate){speakSeq([{t:text,lang:"en",rate}]);}
+function pickEs(){try{const all=speechSynthesis.getVoices().filter(v=>/^es[-_]/i.test(v.lang));
+  return all.find(v=>/es[-_](MX|US|CR|419)/i.test(v.lang))||all[0]||null;}catch(e){return null;}}
+/* parts: [{t, lang:"en"|"es", rate?}] spoken one after another */
+function speakSeq(parts){
+  try{
+    speechSynthesis.cancel();
+    const list=parts.filter(p=>p&&p.t&&String(p.t).trim());
+    list.forEach((p,i)=>{
+      const u=new SpeechSynthesisUtterance(String(p.t));
+      if(p.lang==="es"){u.lang="es-MX";const v=pickEs();if(v)u.voice=v;u.rate=1;}
+      else{u.lang="en-US";const v=pickVoice();if(v)u.voice=v;u.rate=p.rate||S.profile.speed;}
+      if(i===0)u.onstart=()=>onSpeakState&&onSpeakState(true);
+      if(i===list.length-1)u.onend=()=>onSpeakState&&onSpeakState(false);
+      u.onerror=()=>onSpeakState&&onSpeakState(false);
+      speechSynthesis.speak(u);
+    });
+  }catch(e){toast("Tu navegador no permite reproducir voz aquí.");}
+}
+
+/* ---------- dictation ---------- */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let rec=null;
+$("#micBtn").addEventListener("click",()=>{
+  const hint="Permite el micrófono para Maya en los ajustes del navegador, o usa el micrófono del teclado.";
+  if(rec){try{rec.stop();}catch(e){}return;}
+  if(!SR){toast(hint,4500);$("#input").focus();return;}
+  try{
+    rec=new SR();rec.lang=S.profile.micLang||"en-US";rec.interimResults=true;rec.continuous=false;
+    const base=$("#input").value;
+    rec.onresult=ev=>{let t="";for(const r of ev.results)t+=r[0].transcript;$("#input").value=(base?base+" ":"")+t;grow();};
+    rec.onerror=()=>{toast(hint,4500);};
+    rec.onend=()=>{rec=null;$("#micBtn").classList.remove("live");};
+    rec.start();$("#micBtn").classList.add("live");
+  }catch(e){rec=null;toast(hint,4500);$("#input").focus();}
+});
+
+/* ---------- progress logic ---------- */
+function bumpDay(xp){
+  const d=today();
+  if(S.lastDay!==d){
+    S.streak=(S.lastDay&&daysBetween(S.lastDay,d)===1)?S.streak+1:1;
+    S.lastDay=d;
+  }
+  S.days[d]=(S.days[d]||0)+1;
+  const keys=Object.keys(S.days).sort();while(keys.length>60)delete S.days[keys.shift()];
+  S.xp+=xp;
+}
+function liveStreak(){if(!S.lastDay)return 0;const g=daysBetween(S.lastDay,today());return g<=1?S.streak:0;}
+function renderHeader(){
+  const p=S.profile;
+  $("#compName").textContent=p.companion;
+  $("#avatar").textContent=(p.companion[0]||"M").toUpperCase();
+  $("#compSub").textContent=(p.gender==="f"?"Tu compañera":"Tu compañero")+" de inglés · "+p.level;
+  $("#streakN").textContent=liveStreak();
+  const n=S.days[today()]||0, f=Math.min(1,n/p.goal);
+  $("#ringArc").setAttribute("stroke-dashoffset",(94.25*(1-f)).toFixed(2));
+  document.title="Inglés con "+p.companion;
+  const due=dueWords().length;$("#dueBadge").hidden=!due;$("#dueBadge").textContent=due;
+}
+
+/* ---------- chat ---------- */
+function greeting(){
+  const p=S.profile;const h=new Date().getHours();
+  const hi=h<12?"Good morning":h<18?"Good afternoon":"Good evening";
+  return {role:"assistant",content:`${hi}, Miguel! I'm ${p.companion}, your English ${p.gender==="f"?"buddy":"buddy"}. Talk to me about anything: your day, the restaurant, surfing. If you don't know a word, just say it in Spanish and I'll help you. So, how's it going today?`,
+    es:`¡${h<12?"Buenos días":h<18?"Buenas tardes":"Buenas noches"}, Miguel! Soy ${p.companion}, tu ${p.gender==="f"?"compañera":"compañero"} de inglés. Háblame de lo que quieras: tu día, el restaurante, el surf. Si no sabes una palabra, dímela en español y te ayudo. ¿Cómo vas hoy?`,words:[{en:"buddy",es:"compañero, amigo"}]};
+}
+function ensureChat(){if(!S.chat.length)S.chat.push(greeting());}
+
+const chatEl=$("#chat");
+/* pronunciation */
+const PRON_STYLE=`Write the pronunciation for a Costa Rican Spanish speaker using Spanish spelling (how it sounds, not how it is written). Separate syllables inside a word with hyphens, write the stressed syllable of each multi-syllable word in CAPITALS, words separated by spaces, no IPA, no accent marks. Reflect natural connected speech (reductions like "gonna", linking). Examples: "How are you doing today?" -> "jau ar iu DU-in tu-DEI". "Would you like something to drink?" -> "wud-yu laik SAM-zing tu drink". "The fish is fresh." -> "da fish is fresh".`;
+function pronLine(pron,tip){
+  if(!pron)return null;
+  return el("div",{class:"pron"},el("span",{class:"pl",text:"Se dice"}),pron,tip?el("span",{class:"tip",text:tip}):null);
+}
+if(!S.pron)S.pron={};
+async function getPron(text){
+  const k=text.trim();if(S.pron[k])return S.pron[k];
+  if(sampleState!=="ok")throw {code:"no_key"};
+  const out=await sample.json(`${PRON_STYLE}\nAlso give "tip": one short tip in Spanish (max 15 words) about the hardest sound in it, or "" if none.\nText: "${k}"\nReply with ONLY JSON: {"pron":"","tip":""}`,{modelTier:"quick",cache:{gcTime:86400000}});
+  const r={pron:String(out&&out.pron||""),tip:String(out&&out.tip||"")};
+  if(r.pron){S.pron[k]=r;const ks=Object.keys(S.pron);if(ks.length>300)delete S.pron[ks[0]];persist();}
+  return r;
+}
+function pronButton(text,slot,cls){
+  const b=el("button",{class:cls||"chip"},"Pronunciación");
+  b.addEventListener("click",async()=>{
+    if(slot.firstChild){slot.replaceChildren();return;}
+    b.textContent="…";
+    try{const r=await getPron(text);slot.replaceChildren(pronLine(r.pron,r.tip)||"");}
+    catch(e){toast(e&&e.code?errText(e.code):"No se pudo obtener la pronunciación. Intenta otra vez.");}
+    b.textContent="Pronunciación";
+  });
+  return b;
+}
+function wordSaved(en){return S.words.some(w=>w.en.toLowerCase()===en.toLowerCase());}
+function saveWord(en,es,btn,pron){
+  if(wordSaved(en)){toast("Ya está en tu repaso.");return;}
+  S.words.push({en,es,pron:pron||"",box:1,due:Date.now(),added:Date.now()});
+  if(S.words.length>400)S.words.shift();
+  persist();renderHeader();
+  if(btn){btn.classList.add("on");btn.replaceChildren(ic("check"),en);}
+  toast("Guardada para repasar: "+en);
+}
+function fbCard(fb){
+  const lbl={spanish:"Así se dice en inglés",correction:"Corrección",pronunciation:"Pronunciación",great:"Muy bien"}[fb.type]||"Nota";
+  const card=el("div",{class:"fb "+fb.type},el("span",{class:"lbl",text:lbl}));
+  if((fb.type==="correction"||fb.type==="pronunciation")&&fb.you_said)
+    card.append(el("div",{class:"why"},fb.type==="pronunciation"?"El celular entendió: ":"",el("s",{text:fb.you_said})));
+  if(fb.why)card.append(el("div",{class:"whyfirst",text:fb.why}));
+  if(fb.better){
+    if(fb.type!=="great")card.append(el("div",{class:"en-lbl",text:"Así se dice bien"}));
+    card.append(el("div",{class:"row"},el("div",{class:"grow better",text:fb.better}),
+      el("button",{class:"chip","aria-label":"Escuchar",onclick:()=>speak(fb.better)},ic("play")),
+      el("button",{class:"chip","aria-label":"Escuchar lento",onclick:()=>speak(fb.better,0.65)},"Lento")));
+  }
+  if(fb.better_pron)card.append(pronLine(fb.better_pron));
+  return card;
+}
+function renderMsg(m,idx){
+  if(m.role==="user"){
+    const wrap=el("div",{class:"msg me"});
+    if(m.img)wrap.append(el("img",{class:"thumb",src:m.img,alt:"Foto compartida"}));
+    else if(m.photo)wrap.append(el("div",{class:"small",text:"Foto compartida"}));
+    if(m.content&&!m.hideText)wrap.append(el("div",{class:"bubble",text:m.content}));
+    if(m.fb&&m.fb.type)wrap.append(fbCard(m.fb));
+    return wrap;
+  }
+  if(m.role==="sys")return el("div",{class:"sys",text:m.content});
+  const wrap=el("div",{class:"msg ai"});
+  if(m.explain)wrap.append(el("div",{class:"explain"},el("span",{class:"lbl",text:"Explicación"}),m.explain));
+  wrap.append(el("div",{class:"bubble",text:m.content}));
+  const cached=!m.pron&&S.pron[m.content.trim()];
+  const pslot=el("div",{});
+  if(m.pron)pslot.append(pronLine(m.pron,m.tip));else if(cached)pslot.append(pronLine(cached.pron,cached.tip));
+  wrap.append(pslot);
+  const esLine=el("div",{class:"es",text:m.es||""});esLine.hidden=true;
+  const tools=el("div",{class:"tools"},
+    el("button",{class:"chip",onclick:()=>speak(m.content)},ic("play"),"Escuchar"),
+    el("button",{class:"chip",onclick:()=>speak(m.content,0.7)},"Lento"),
+    m.es?el("button",{class:"chip",onclick:()=>{esLine.hidden=!esLine.hidden;}},ic("tr"),"Traducir"):null,
+    (!m.pron&&!cached)?pronButton(m.content,pslot):null);
+  (m.words||[]).forEach(w=>{if(!w||!w.en)return;
+    const b=el("button",{class:"chip on",title:(w.es||"")+(w.pron?" · "+w.pron:"")+" · guardada en Repaso"});b.append(ic("check"),w.en+(w.es?" = "+w.es:""));
+    b.addEventListener("click",()=>speak(w.en));tools.append(b);});
+  wrap.append(tools,esLine);
+  return wrap;
+}
+function renderChat(){
+  ensureChat();
+  chatEl.replaceChildren(...S.chat.map(renderMsg));
+  renderSceneBar();renderStarters();
+  scrollDown();
+}
+function scrollDown(){requestAnimationFrame(()=>{const m=$("#main");m.scrollTop=m.scrollHeight;});}
+function renderSceneBar(){
+  const bar=$("#sceneBar");bar.replaceChildren();
+  if(!S.scene)return;
+  const sc=SCENES.find(s=>s.id===S.scene);if(!sc)return;
+  bar.append(el("div",{class:"scene-bar"},el("div",{class:"grow"},"Escena: ",el("b",{text:sc.t})),
+    el("button",{onclick:()=>endScene()},"Terminar")));
+}
+function renderStarters(){
+  const st=$("#starters");st.replaceChildren();
+  $("#topicsLbl").hidden=!!S.scene;
+  if(S.scene)return;
+  TOPICS.forEach(([lab,t])=>st.append(el("button",{type:"button",onclick:()=>send(t,"Miguel picked a new topic: follow it naturally and ask him an easy, personal question about it.")},lab)));
+}
+
+let sample=null,sampleState="loading",busy=false,ctl=null;
+/* ---------- Claude API (key stays only on this device) ---------- */
+const KEY_LS="ingles506maya-key";
+function apiKey(){try{return localStorage.getItem(KEY_LS)||"";}catch(e){return "";}}
+function setKey(k){try{if(k)localStorage.setItem(KEY_LS,k);else localStorage.removeItem(KEY_LS);}catch(e){}sampleState=apiKey()?"ok":"nokey";}
+const MODELS={quick:"claude-sonnet-5-5",default:"claude-opus-5-5",complex:"claude-opus-5-5"};
+function toB64(file){return new Promise((ok,bad)=>{const rd=new FileReader();rd.onerror=()=>bad({code:"image_rejected"});
+  rd.onload=()=>{const img=new Image();img.onerror=()=>bad({code:"image_rejected"});img.onload=()=>{
+    const sc=Math.min(1,1200/Math.max(img.width,img.height));const c=document.createElement("canvas");c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);
+    c.getContext("2d").drawImage(img,0,0,c.width,c.height);ok(c.toDataURL("image/jpeg",0.85).split(",")[1]);};img.src=rd.result;};rd.readAsDataURL(file);});}
+async function callClaude(input,opts){
+  opts=opts||{};const key=apiKey();if(!key)throw {code:"no_key"};
+  let system="";const messages=[];
+  if(typeof input==="string")messages.push({role:"user",content:input});
+  else{const t=input.slice();if(t.length&&t[0].role==="user"&&t.length>1)system=t.shift().content;
+    t.forEach(m=>{const last=messages[messages.length-1];if(last&&last.role===m.role)last.content+="\n\n"+m.content;else messages.push({role:m.role,content:m.content});});
+    if(!messages.length||messages[0].role!=="user")messages.unshift({role:"user",content:"(start of conversation)"});}
+  if(opts.images&&opts.images.length){const last=messages[messages.length-1];const imgs=await Promise.all(Array.from(opts.images).slice(0,1).map(toB64));
+    last.content=[...imgs.map(d=>({type:"image",source:{type:"base64",media_type:"image/jpeg",data:d}})),{type:"text",text:last.content}];}
+  const body={model:MODELS[opts.modelTier||"quick"]||MODELS.quick,max_tokens:1500,messages};if(system)body.system=system;
+  let res;
+  try{res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",signal:opts.signal,
+    headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify(body)});}
+  catch(e){throw {code:e&&e.name==="AbortError"?"cancelled":"offline"};}
+  if(!res.ok){let msg="";try{msg=(await res.json()).error.message||"";}catch(e){}
+    const c=(res.status===401||res.status===403)?"bad_key":res.status===429?"rate_limited":(res.status===402||/credit|billing/i.test(msg))?"no_credit":res.status===529?"overloaded":"upstream_error";
+    throw {code:c,message:msg};}
+  const j=await res.json();const text=(j.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("").trim();
+  if(!text)throw {code:"empty_completion"};
+  return {text,truncated:j.stop_reason==="max_tokens"};
+}
+function parseJSON(t){try{return JSON.parse(t);}catch(e){}const m=t.match(/```(?:json)?\s*([\s\S]*?)```/);if(m){try{return JSON.parse(m[1]);}catch(e){}}
+  const a=t.indexOf("{"),b=t.lastIndexOf("}");if(a>=0&&b>a){try{return JSON.parse(t.slice(a,b+1));}catch(e){}}throw {code:"invalid_json",text:t};}
+sample=(input,opts)=>callClaude(input,opts);
+sample.json=async(input,opts)=>parseJSON((await callClaude(input,opts)).text);
+sample.limits=async()=>({images:{maxCount:1,mediaTypes:["image/jpeg","image/png","image/webp","image/heic","image/heif"]}});
+sampleState=apiKey()?"ok":"nokey";
+function errText(code){return {no_key:"Para conversar, agrega tu llave de la API de Claude en Ajustes.",bad_key:"Tu llave de la API no funciona. Revísala en Ajustes.",
+  no_credit:"Tu cuenta de la API de Claude no tiene saldo. Recárgala en console.anthropic.com (Billing).",rate_limited:"Demasiados mensajes seguidos. Espera un minuto y sigue.",
+  offline:"Sin conexión a internet. Revisa tu señal y vuelve a enviar.",overloaded:"Claude está muy ocupado en este momento. Vuelve a enviar en unos segundos."}[code]||"No llegó la respuesta. Toca enviar para reintentar.";}
+function addSys(t){chatEl.append(el("div",{class:"sys",text:t}));scrollDown();}
+
+function rules(extra){
+  const p=S.profile;const sc=S.scene&&SCENES.find(s=>s.id===S.scene);
+  const lvl={A1:"A1: very short, very simple sentences, common words, present tense.",A2:"A2: short simple sentences, everyday vocabulary.",B1:"B1: natural everyday English, some idioms explained by context.",B2:"B2: natural fluent English with common idioms and phrasal verbs.",C1:"C1: fully natural native-speed English, idioms, nuance."}[p.level];
+  const recentErr=S.errors.slice(-6).map(e=>`"${e.you}" -> "${e.better}"`).join("; ");
+  return `You are ${p.companion}, the personal English-speaking companion of Miguel Meza. You are a ${p.gender==="f"?"woman":"man"}: warm, upbeat, curious, a little playful, like a close friend who happens to be a great English teacher. You chat with him every day.
+
+About Miguel: native Spanish speaker from Costa Rica. He is opening a sushi restaurant, Nosara Sushi 506, in Playa Guiones, Nosara (surf and yoga town, many international tourists). He wants to speak English fluently as fast as possible: with customers, staff, suppliers and in daily life. He often uses voice dictation, so ignore missing punctuation, capitalization and small dictation glitches.
+His level: ${lvl}
+${recentErr?`His recent mistakes (recycle these naturally when useful): ${recentErr}`:""}
+
+${sc?`ROLE-PLAY MODE. Scenario: ${sc.role} Stay in character. Keep the scene realistic and moving; raise small new challenges. If Miguel asks to stop, step out of character.`:"FREE CONVERSATION MODE. Talk about ANY topic he wants: his life, family, friends, feelings, football, music, movies, travel, news, health, money, technology, dreams, jokes, anything. Follow his lead and go deep into whatever interests him. Talk like a real friend: react to what he says, share small opinions and stories, ask one follow-up question. Only bring up the restaurants if he does or if the conversation is running dry."}
+If he shares a PHOTO: look at it carefully, react like a friend, describe it in simple English, and use the names of 1-2 interesting things in it as "words".
+${extra||""}
+
+For EVERY message from Miguel:
+0. PRONUNCIATION CHECK FIRST. He usually speaks through phone voice dictation, so the text is what the phone understood. If a word does not fit the context but sounds like the word he clearly meant (e.g. "I want to tree tables" for "three", "very" written as "berry", "the cheap is ready" for "chef", "I leave in Nosara" for "live", "shit" for "sheet", "beach" vs "bitch"), the phone misheard him: that is a pronunciation error. Then feedback.type="pronunciation"; you_said = what the phone wrote; better = the sentence he meant, said correctly; why = FIRST, in Spanish, exactly what he is doing wrong with his mouth and how to fix it (tongue, lips, teeth, vowel length, stress), max 30 words. This has priority over grammar.
+1. If he writes fully or partly in Spanish: feedback.type="spanish"; feedback.better = the natural English way to say exactly what he meant; feedback.why = a tiny tip in Spanish (max 15 words). Then reply in English to what he said and encourage him to try saying it in English.
+2. If he asks a question about English (how to say something, grammar, meaning, pronunciation), answer it clearly in Spanish in "explain_es" (max 70 words, 1-2 English examples), then continue the conversation in English in "reply".
+3. If he writes English with real mistakes: feedback.type="correction"; you_said = his sentence; better = corrected natural version; why = short reason in Spanish (max 18 words).
+4. If his English is correct: feedback.type="great"; better = a more native or fluent way to say it (or the same sentence if already natural); why = short specific praise in Spanish.
+"reply": spoken English only, max 3 short sentences, no emojis, no markdown, usually ending with a question.
+"reply_es": Spanish translation of "reply".
+"words": 0 to 2 useful words or expressions from your reply that may be new for his level, with Spanish meaning and pronunciation.
+
+PRONUNCIATION IS REQUIRED in every answer, always exact. ${PRON_STYLE}
+- "reply_pron": pronunciation of your whole "reply".
+- "feedback.better_pron": pronunciation of "feedback.better".
+- "words[].pron": pronunciation of each word.
+- "pron_tip": one short tip in Spanish (max 15 words) about the hardest sound in your reply or in "better" (th, v vs b, short vs long i, final consonants, silent letters), or "" if none.
+
+Reply with ONLY this JSON:
+{"feedback":{"type":"pronunciation|spanish|correction|great","you_said":"","better":"","better_pron":"","why":""},"explain_es":"","reply":"","reply_pron":"","pron_tip":"","reply_es":"","words":[{"en":"","es":"","pron":""}]}`;
+}
+function turnsFor(extra){
+  const hist=S.chat.filter(m=>m.role==="user"||m.role==="assistant").slice(-24).map(m=>({role:m.role,content:m.content}));
+  while(hist.length&&hist[0].role!=="assistant"&&hist[0].role!=="user")hist.shift();
+  return [{role:"user",content:rules(extra)},...hist];
+}
+
+async function send(textOverride,extra){
+  const input=$("#input");
+  let text=(textOverride!=null?textOverride:input.value).trim();
+  const photo=textOverride==null?pendingPhoto:null;
+  if((!text&&!photo)||busy)return;
+  if(sampleState!=="ok"){toast(errText("no_key"),4000);openSettings();return;}
+  input.value="";grow();
+  const um={role:"user",content:text};
+  if(photo){
+    um.photo=true;um.img=photo.url;
+    if(!text){um.content="[Miguel shared a photo]";um.hideText=true;}
+    else um.content="[Miguel shared a photo] "+text;
+    clearPhoto();
+  }
+  S.chat.push(um);
+  chatEl.append(renderMsg(um));renderStarters();
+  const typing=el("div",{class:"msg ai"},el("div",{class:"bubble typing"},el("i"),el("i"),el("i")));
+  chatEl.append(typing);scrollDown();
+  busy=true;$("#sendBtn").disabled=true;
+  ctl=new AbortController();
+  try{
+    const opts={cache:false,signal:ctl.signal,modelTier:S.profile.precise?"default":"quick"};
+    if(photo)opts.images=[photo.file];
+    const out=await sample.json(turnsFor(extra),opts);
+    const fb=out&&out.feedback&&out.feedback.type?out.feedback:null;
+    if(fb&&!/^(pronunciation|spanish|correction|great)$/.test(fb.type))fb.type="great";
+    um.fb=fb;
+    const reply=String(out&&out.reply||"").trim()||"Sorry, can you say that again?";
+    const am={role:"assistant",content:reply,es:String(out.reply_es||""),explain:String(out.explain_es||"").trim(),
+      pron:String(out.reply_pron||"").trim(),tip:String(out.pron_tip||"").trim(),
+      words:Array.isArray(out.words)?out.words.filter(w=>w&&w.en).slice(0,2).map(w=>({en:String(w.en),es:String(w.es||""),pron:String(w.pron||"")})):[]};
+    if(fb&&fb.better_pron)fb.better_pron=String(fb.better_pron);
+    S.chat.push(am);
+    am.words.forEach(w=>{if(!wordSaved(w.en)){S.words.push({en:w.en,es:w.es,pron:w.pron||"",box:1,due:Date.now()+36e5,added:Date.now()});}});
+    if(fb&&fb.type!=="great"&&fb.better&&fb.better.length<=90&&!wordSaved(fb.better)){S.words.push({en:fb.better,es:fb.type==="spanish"?String(fb.you_said||text).slice(0,90):(fb.why||""),pron:fb.better_pron||"",box:1,due:Date.now()+36e5,added:Date.now()});}
+    while(S.words.length>400)S.words.shift();
+    if(fb&&(fb.type==="correction"||fb.type==="pronunciation")&&fb.better){S.errors.push({you:String(fb.you_said||text),better:String(fb.better),why:String(fb.why||""),at:Date.now()});if(S.errors.length>80)S.errors.shift();}
+    bumpDay(fb?(fb.type==="great"?15:fb.type==="correction"?10:5):8);
+    if(S.chat.length>60)S.chat=S.chat.slice(-60);
+    persist();
+    typing.remove();
+    chatEl.lastElementChild.replaceWith(renderMsg(um));
+    chatEl.append(renderMsg(am));renderHeader();scrollDown();
+    if(S.profile.autoSpeak||voiceOpen){
+      const seq=[];
+      if(fb&&fb.type!=="great"&&fb.better){
+        if(fb.why)seq.push({t:fb.why,lang:"es"});
+        seq.push({t:fb.type==="spanish"?"En inglés se dice:":"Dilo así:",lang:"es"});
+        seq.push({t:fb.better,lang:"en",rate:Math.min(S.profile.speed,0.8)});
+      }
+      seq.push({t:reply,lang:"en"});
+      speakSeq(seq);
+    }
+    if(onReply)onReply(um,am);
+    const n=S.days[today()];if(n===S.profile.goal)toast("¡Meta del día cumplida! "+n+" mensajes.");
+  }catch(e){
+    typing.remove();
+    const code=e&&e.code;
+    if(code==="cancelled"){}
+    else if(code==="no_key"||code==="bad_key"){addSys(errText(code));input.value=text;S.chat.pop();chatEl.querySelectorAll(".msg.me").forEach((n,i,a)=>{if(i===a.length-1)n.remove();});openSettings();}
+    else {addSys(errText(code));input.value=text;S.chat.pop();chatEl.querySelectorAll(".msg.me").forEach((n,i,a)=>{if(i===a.length-1)n.remove();});}
+    if(onReply)onReply(null,null);
+  }finally{busy=false;$("#sendBtn").disabled=false;}
+}
+
+/* ---------- photos ---------- */
+let pendingPhoto=null;
+function clearPhoto(){pendingPhoto=null;$("#pendingPhoto").replaceChildren();$("#photoInput").value="";}
+(async()=>{
+    try{const lim=await sample.limits();if(lim&&lim.images){$("#photoBtn").hidden=false;$("#photoInput").accept=lim.images.mediaTypes.join(",")||"image/*";}}catch(e){}
+})();
+$("#photoBtn").addEventListener("click",()=>$("#photoInput").click());
+$("#photoInput").addEventListener("change",()=>{
+  const f=$("#photoInput").files[0];if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    const img=new Image();
+    img.onload=()=>{ // small thumbnail for the chat history
+      const c=document.createElement("canvas");const sc=Math.min(1,320/Math.max(img.width,img.height));
+      c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+      pendingPhoto={file:f,url:c.toDataURL("image/jpeg",0.7)};
+      $("#pendingPhoto").replaceChildren(el("div",{class:"pending-photo"},el("img",{src:pendingPhoto.url,alt:""}),
+        el("div",{class:"grow"},"Foto lista. Escribe o dicta algo sobre ella, o solo toca enviar."),
+        el("button",{class:"chip",type:"button",onclick:clearPhoto},"Quitar")));
+      $("#input").focus();
+    };
+    img.onerror=()=>toast("No pude abrir esa imagen. Prueba con otra foto.");
+    img.src=rd.result;
+  };
+  rd.readAsDataURL(f);
+});
+
+/* ---------- voice mode ---------- */
+let voiceOpen=false,onReply=null;
+const ENSO='<svg viewBox="0 0 100 100"><path d="M50 8a42 42 0 1 1-36 20" fill="none" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/><path d="M14 28a42 42 0 0 1 8-9" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" opacity=".5"/></svg>';
+function openVoice(){
+  voiceOpen=true;
+  const p=S.profile;
+  const last=[...S.chat].reverse().find(m=>m.role==="assistant");
+  const enso=el("div",{class:"enso"});enso.innerHTML=ENSO;enso.append(el("b",{text:(p.companion[0]||"M").toUpperCase()}));
+  const state=el("div",{class:"vm-state",text:"Tu turno"});
+  const line=el("div",{class:"vm-line",text:last?last.content:""});
+  const vpron=el("div",{style:"width:100%"});
+  if(last&&last.pron)vpron.append(pronLine(last.pron,last.tip));
+  const es=el("div",{class:"vm-es",text:last&&last.es||""});es.hidden=true;
+  const fbBox=el("div",{style:"width:100%;text-align:left"});
+  const ta=el("textarea",{id:"vm-text",rows:"2",placeholder:"Toca el micrófono del teclado y habla…","aria-label":"Tu respuesta"});
+  let idle=null,autoSend=true;
+  const setState=s=>{enso.classList.remove("listening");enso.classList.toggle("talking",s==="talk");enso.classList.toggle("thinking",s==="think");
+    state.textContent={talk:p.companion+" está hablando",think:p.companion+" está pensando",you:"Tu turno · habla cuando quieras"}[s];};
+  const go=()=>{clearTimeout(idle);const t=ta.value.trim();if(!t||busy)return;ta.value="";setState("think");fbBox.replaceChildren();send(t);};
+  let vrec=null,handsFree=!!SR;
+  const hfBtn=el("button",{type:"button",class:"chip"+(SR?" on":"")},SR?"Manos libres: sí":"Manos libres: no disponible");
+  hfBtn.addEventListener("click",()=>{if(!SR)return;handsFree=!handsFree;hfBtn.classList.toggle("on",handsFree);hfBtn.textContent="Manos libres: "+(handsFree?"sí":"no");if(handsFree)listen();else{try{vrec&&vrec.abort();}catch(e){}}});
+  const listen=()=>{
+    if(!SR||!voiceOpen||busy||vrec)return;
+    try{
+      try{speechSynthesis.cancel();}catch(e){}
+      vrec=new SR();vrec.lang=S.profile.micLang||"en-US";vrec.interimResults=true;vrec.continuous=false;
+      vrec.onresult=ev=>{let t="";for(const r of ev.results)t+=r[0].transcript;ta.value=t;};
+      vrec.onend=()=>{vrec=null;if(!voiceOpen)return;if(ta.value.trim())go();else setState("you");};
+      vrec.onerror=e=>{if(e.error==="not-allowed"||e.error==="service-not-allowed"){handsFree=false;hfBtn.classList.remove("on");hfBtn.textContent="Manos libres: no";toast("Permite el micrófono para hablar sin teclado.",4000);}};
+      vrec.start();enso.classList.remove("talking","thinking");enso.classList.add("listening");state.textContent="Te escucho… habla ahora";
+    }catch(e){vrec=null;}
+  };
+  enso.style.cursor="pointer";enso.addEventListener("click",()=>{if(vrec){try{vrec.stop();}catch(e){}}else listen();});
+  ta.addEventListener("input",()=>{clearTimeout(idle);if(autoSend&&ta.value.trim())idle=setTimeout(go,2200);});
+  ta.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){e.preventDefault();go();}});
+  const autoBtn=el("button",{type:"button",class:"chip on"},"Envío automático: sí");
+  autoBtn.addEventListener("click",()=>{autoSend=!autoSend;autoBtn.classList.toggle("on",autoSend);autoBtn.textContent="Envío automático: "+(autoSend?"sí":"no");});
+  const close=()=>{try{vrec&&vrec.abort();}catch(e){}voiceOpen=false;onReply=null;onSpeakState=null;clearTimeout(idle);try{speechSynthesis.cancel();}catch(e){}vm.remove();renderChat();};
+  const vm=el("div",{class:"vm",role:"dialog","aria-label":"Modo voz"},
+    el("div",{class:"vm-top"},el("span",{class:"eyebrow",text:"Modo voz"}),el("button",{class:"chip",onclick:close},"Cerrar")),
+    el("div",{class:"vm-stage"},enso,state,line,vpron,
+      el("div",{class:"tools",style:"justify-content:center"},
+        el("button",{class:"chip",onclick:()=>speak(line.textContent)},ic("play"),"Repetir"),
+        el("button",{class:"chip",onclick:()=>speak(line.textContent,0.7)},"Lento"),
+        el("button",{class:"chip",onclick:()=>{es.hidden=!es.hidden;}},ic("tr"),"Traducir")),
+      es,fbBox),
+    el("div",{class:"vm-input"},ta,
+      el("div",{class:"vm-row"},hfBtn,autoBtn,el("button",{class:"send",style:"width:auto;padding:0 18px;border-radius:999px;height:40px;font-weight:600",onclick:go},"Enviar")),
+      el("div",{class:"small",style:"text-align:center",text:(SR?"Habla cuando veas \"Te escucho\". Toca el círculo para hablar o para terminar.":"Toca el micrófono del teclado y habla. Cuando dejas de hablar, se envía solo.")})));
+  document.body.append(vm);
+  onSpeakState=on=>{if(on){setState("talk");return;}enso.classList.remove("listening");setState("you");if(handsFree&&SR)setTimeout(listen,250);else ta.focus();};
+  onReply=(um,am)=>{
+    if(!am){setState("you");return;}
+    line.textContent=am.content;es.textContent=am.es||"";es.hidden=true;
+    vpron.replaceChildren();if(am.pron)vpron.append(pronLine(am.pron,am.tip));
+    fbBox.replaceChildren();
+    if(um&&um.fb&&um.fb.type&&um.fb.type!=="great")fbBox.append(fbCard(um.fb));
+    if(am.explain)fbBox.append(el("div",{class:"explain",style:"margin-top:8px"},el("span",{class:"lbl",text:"Explicación"}),am.explain));
+  };
+  setState("you");
+  if(last){speak(last.content);}else ta.focus();
+}
+$("#voiceBtn").addEventListener("click",openVoice);
+
+/* scenes */
+function startScene(id){
+  const sc=SCENES.find(s=>s.id===id);if(!sc)return;
+  S.scene=id;
+  S.chat=[{role:"sys",content:`Escena: ${sc.t}. ${sc.d} Responde como lo harías en la vida real.`},{role:"assistant",content:sc.open,es:"",words:[]}];
+  persist();show("talk");renderChat();
+  if(S.profile.autoSpeak)speak(sc.open);
+}
+function endScene(){
+  const sc=SCENES.find(s=>s.id===S.scene);
+  const did=S.chat.filter(m=>m.role==="user").length;
+  S.scene=null;
+  S.chat=[{role:"sys",content:sc?`Terminaste la escena "${sc.t}" con ${did} respuesta${did===1?"":"s"}.`:"Escena terminada."},greeting()];
+  persist();renderChat();
+}
+function renderScenes(){
+  const mk=sc=>el("button",{class:"card",onclick:()=>startScene(sc.id)},el("span",{class:"k",text:sc.k}),el("b",{text:sc.t}),el("span",{text:sc.d}),el("span",{class:"lvl",text:sc.lvl}));
+  $("#scenesPron").replaceChildren(...SCENES.filter(s=>s.g==="pron").map(mk));
+  $("#scenesWork").replaceChildren(...SCENES.filter(s=>s.g==="work").map(mk));
+  $("#scenesLife").replaceChildren(...SCENES.filter(s=>s.g==="life").map(mk));
+}
+
+/* phrases */
+let cat="Todas";
+function renderPhrases(){
+  const i=Math.abs(daysBetween("2026-01-01",today()))%PHRASES.length;const p=PHRASES[i];
+  const podSlot=el("div",{});const pc=S.pron[p[1]];if(pc)podSlot.append(pronLine(pc.pron,pc.tip));
+  $("#pod").replaceChildren(el("div",{class:"eyebrow",text:"Frase del día"}),el("div",{class:"en",text:p[1]}),el("div",{class:"esx",text:p[2]}),podSlot,
+    el("div",{class:"tools"},el("button",{class:"chip",onclick:()=>speak(p[1])},ic("play"),"Escuchar"),
+      pc?null:pronButton(p[1],podSlot),
+      el("button",{class:"chip",onclick:()=>{show("talk");send(`I want to practice this phrase: "${p[1]}"`,`Miguel wants to drill the phrase "${p[1]}". Create a quick realistic moment where he must use it, then check his use.`);}},"Practicarla conmigo")));
+  const cats=["Todas",...new Set(PHRASES.map(p=>p[0]))];
+  $("#cats").replaceChildren(...cats.map(c=>el("button",{"aria-pressed":String(c===cat),onclick:()=>{cat=c;renderPhrases();}},c)));
+  const rows=PHRASES.filter(p=>cat==="Todas"||p[0]===cat).map(p=>{
+    const saved=wordSaved(p[1]);
+    const sb=el("button",{class:"chip"+(saved?" on":""),"aria-label":"Guardar"},ic(saved?"check":"plus"));
+    sb.addEventListener("click",()=>{saveWord(p[1],p[2]);sb.classList.add("on");sb.replaceChildren(ic("check"));});
+    const slot=el("div",{style:"margin-top:4px"});const c=S.pron[p[1]];if(c)slot.append(pronLine(c.pron,c.tip));
+    return el("div",{class:"item"},el("button",{class:"chip","aria-label":"Escuchar",onclick:()=>speak(p[1])},ic("play")),
+      el("div",{class:"grow"},el("div",{class:"en",text:p[1]}),el("div",{class:"es",text:p[2]}),slot,c?null:pronButton(p[1],slot,"chip")),sb);
+  });
+  $("#phraseList").replaceChildren(...rows);
+}
+
+/* review (Leitner) */
+const BOX_DAYS=[0,1,2,4,8,16,32];
+function dueWords(){const now=Date.now();return S.words.filter(w=>w.due<=now);}
+let revShow=false;
+function renderReview(){
+  const v=$("#v-review");v.replaceChildren();
+  v.append(el("div",{class:"eyebrow",text:"Repaso inteligente"}),el("h2",{class:"h"},"Lo que guardas, ",el("em",{text:"no se olvida"})));
+  const due=dueWords();
+  if(!S.words.length){
+    v.append(el("div",{class:"empty"},"Todavía no tienes palabras guardadas. En la conversación toca ",el("b",{text:"+ palabra"})," o guarda frases en ",el("b",{text:"Frases"}),". Aquí aparecerán para repasarlas en el momento justo."),
+      el("button",{class:"btn dark",onclick:()=>show("phrases")},"Ver frases de oro"));
+    return;
+  }
+  if(!due.length){
+    const next=S.words.reduce((a,w)=>Math.min(a,w.due),Infinity);
+    v.append(el("div",{class:"empty"},el("b",{text:"Todo al día."})," Próximo repaso: "+new Date(next).toLocaleDateString("es-CR",{weekday:"long",day:"numeric",month:"short"})+"."));
+  } else {
+    const w=due[0];
+    const card=el("div",{class:"flash"},el("div",{class:"small",text:`${due.length} por repasar · nivel ${w.box} de 6`}),
+      el("div",{class:"q",text:w.es||w.en}),
+      revShow?el("div",{class:"a",text:w.en}):el("div",{class:"small",text:"¿Cómo se dice en inglés? Dilo en voz alta."}),
+      revShow?(w.pron?pronLine(w.pron):(S.pron[w.en]?pronLine(S.pron[w.en].pron,S.pron[w.en].tip):null)):null);
+    v.append(card);
+    if(!revShow){v.append(el("button",{class:"btn dark",onclick:()=>{revShow=true;speak(w.en);renderReview();}},"Mostrar respuesta"));}
+    else{
+      v.append(el("button",{class:"btn",onclick:()=>speak(w.en)},"Escuchar otra vez"),
+        el("div",{class:"btns"},
+          el("button",{class:"btn",onclick:()=>grade(w,false)},"Otra vez"),
+          el("button",{class:"btn primary",onclick:()=>grade(w,true)},"La sabía")));
+    }
+  }
+  v.append(el("div",{class:"eyebrow",style:"margin-top:8px",text:`Tus palabras · ${S.words.length}`}));
+  v.append(el("div",{class:"list"},...S.words.slice().reverse().slice(0,60).map(w=>el("div",{class:"item"},
+    el("button",{class:"chip","aria-label":"Escuchar",onclick:()=>speak(w.en)},ic("play")),
+    el("div",{class:"grow"},el("div",{class:"en",text:w.en}),el("div",{class:"es",text:w.es})),
+    el("span",{class:"lvl",text:"Nv "+w.box})))));
+}
+function grade(w,ok){
+  w.box=ok?Math.min(6,w.box+1):1;
+  w.due=ok?Date.now()+BOX_DAYS[w.box]*864e5:Date.now()+5*60e3;
+  revShow=false;S.xp+=ok?3:1;persist();renderHeader();renderReview();
+}
+
+/* progress */
+function levelInfo(){const t=[0,300,900,2000,4000,7000];let i=0;while(i<t.length-1&&S.xp>=t[i+1])i++;
+  const lo=t[i],hi=t[i+1]||t[i]+3000;return{rank:i+1,pct:Math.min(100,Math.round((S.xp-lo)/(hi-lo)*100)),toNext:hi-S.xp};}
+function renderProgress(){
+  const v=$("#v-progress");v.replaceChildren();
+  const li=levelInfo();const n=S.days[today()]||0;
+  v.append(el("div",{class:"eyebrow",text:"Tu progreso"}),el("h2",{class:"h"},"Cada día ",el("em",{text:"cuenta"})));
+  const st=liveStreak();
+  v.append(el("div",{class:"stats"},
+    el("div",{class:"tile hero"},el("div",{class:"n",text:st}),el("div",{},el("b",{text:st===1?"día seguido":"días seguidos"}),el("div",{class:"l",text:n>=S.profile.goal?"Meta de hoy cumplida.":`Hoy: ${n} de ${S.profile.goal} mensajes.`}))),
+    el("div",{class:"tile"},el("div",{class:"n",text:S.xp}),el("div",{class:"l",text:"Puntos de experiencia"})),
+    el("div",{class:"tile"},el("div",{class:"n",text:"Rango "+li.rank}),el("div",{class:"levelbar"},el("i",{style:`width:${li.pct}%`})),el("div",{class:"l",text:`${li.toNext} puntos para el siguiente`})),
+    el("div",{class:"tile"},el("div",{class:"n",text:S.words.length}),el("div",{class:"l",text:"Palabras y frases guardadas"})),
+    el("div",{class:"tile"},el("div",{class:"n",text:Object.values(S.days).reduce((a,b)=>a+b,0)}),el("div",{class:"l",text:"Mensajes en inglés (60 días)"}))));
+  // 14-day bars
+  const ds=[];for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);ds.push(d.toLocaleDateString("en-CA"));}
+  const max=Math.max(S.profile.goal,...ds.map(d=>S.days[d]||0));
+  v.append(el("div",{class:"eyebrow",style:"margin-top:6px",text:"Últimos 14 días"}),
+    el("div",{class:"bars"},...ds.map(d=>{const c=S.days[d]||0;return el("div",{class:(c>=S.profile.goal?"hit ":"")+(d===today()?"today":""),title:`${d}: ${c}`,style:`height:${Math.max(3,c/max*100)}%`});})),
+    el("div",{class:"barlbl"},...ds.map(d=>el("span",{text:String(+d.slice(8))}))));
+  // weekly summary (generated automatically once per week)
+  v.append(el("div",{class:"eyebrow",style:"margin-top:8px",text:"Resumen de la semana"}));
+  const wk=Math.floor(Date.now()/(7*864e5));
+  const box=el("div",{class:"summary"});v.append(box);
+  if(S.weekly&&S.weekly.week===wk){box.textContent=S.weekly.text;}
+  else if(S.errors.length<3){box.textContent="Cuando Maya te haya corregido al menos 3 veces, aquí aparecerá automáticamente tu resumen semanal: tus sonidos y errores más difíciles y qué practicar.";}
+  else if(sampleState==="ok"){
+    box.textContent="Preparando tu resumen…";
+    const errs=S.errors.slice(-30).map(e=>`"${e.you}" -> "${e.better}" (${e.why})`).join("\n");
+    sample(`Eres la coach de inglés de Miguel (nivel ${S.profile.level}, hispanohablante de Costa Rica). Con sus errores recientes, escribe en español un resumen semanal breve y motivador (máximo 110 palabras, sin markdown, sin emojis): 1) sus 3 errores o sonidos más difíciles con un ejemplo corregido en inglés y su pronunciación escrita como suena en español con la sílaba fuerte en mayúsculas, 2) un ejercicio concreto para esta semana.\n\nErrores:\n${errs}`,{modelTier:"quick",cache:{gcTime:86400000}})
+      .then(r=>{S.weekly={week:wk,text:r.text.trim()};persist();box.textContent=S.weekly.text;})
+      .catch(()=>{box.textContent="No se pudo preparar el resumen ahora. Vuelve a abrir Progreso más tarde.";});
+  } else box.textContent="El resumen se prepara cuando agregas tu llave de la API en Ajustes.";
+  // errors
+  v.append(el("div",{class:"eyebrow",style:"margin-top:8px",text:"Tus errores frecuentes"}));
+  if(!S.errors.length)v.append(el("div",{class:"empty",text:"Aquí verás las frases que te corrijo, para practicarlas hasta que salgan solas."}));
+  else{
+    v.append(el("button",{class:"btn primary",onclick:()=>{show("talk");send("Let's practice my mistakes!",`Run a quick drill on his recent mistakes: give him one Spanish sentence at a time that forces him to use the corrected form, wait for his answer, then check it. Recent mistakes: ${S.errors.slice(-8).map(e=>`"${e.you}" -> "${e.better}"`).join("; ")}`);}},"Practicar mis errores"));
+    v.append(el("div",{},...S.errors.slice().reverse().slice(0,12).map(e=>el("div",{class:"err"},el("s",{text:e.you}),el("b",{text:e.better}),e.why?el("span",{class:"small",text:e.why}):null))));
+  }
+}
+
+/* settings */
+function openSettings(){
+  const p=Object.assign({},S.profile);
+  const root=$("#sheetRoot");
+  const close=()=>root.replaceChildren();
+  const seg=(key,opts)=>{const s=el("div",{class:"seg"});opts.forEach(([val,lab])=>{const b=el("button",{type:"button","aria-pressed":String(p[key]===val)},lab);
+    b.addEventListener("click",()=>{p[key]=val;s.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));});s.append(b);});return s;};
+  const name=el("input",{id:"set-name",value:p.companion,maxlength:"20"});
+  const speed=el("input",{id:"set-speed",type:"range",min:"0.6",max:"1.2",step:"0.05",value:String(p.speed)});
+  const goal=el("input",{id:"set-goal",type:"number",min:"5",max:"200",value:String(p.goal),inputmode:"numeric"});
+  if(!p.micLang)p.micLang="en-US";
+  const keyIn=el("input",{id:"set-key",type:"password",autocomplete:"off",placeholder:"sk-ant-…",value:apiKey()});
+  const keyStatus=el("span",{class:"small",text:apiKey()?"Llave guardada solo en este teléfono.":"Sin llave todavía."});
+  const testKey=el("button",{type:"button",class:"chip",style:"align-self:flex-start"},"Probar llave");
+  testKey.addEventListener("click",async()=>{const old=apiKey();setKey(keyIn.value.trim());keyStatus.textContent="Probando…";
+    try{await callClaude("Reply with the single word: ok",{modelTier:"quick"});keyStatus.textContent="La llave funciona. Maya está lista.";}
+    catch(e){keyStatus.textContent=errText(e.code||"bad_key");setKey(old);}});
+  const backupBox=el("textarea",{id:"set-backup",rows:"3",placeholder:"Pega aquí un respaldo para restaurarlo",style:"border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:10px;padding:10px 12px;font:inherit;font-size:14px;resize:vertical"});
+  const sheet=el("div",{class:"sheet",role:"dialog","aria-label":"Ajustes"},
+    el("h2",{class:"h",style:"font-size:22px"},"Hazlo ",el("em",{text:"tuyo"})),
+    el("div",{class:"field"},el("label",{for:"set-name"},"Nombre de tu compañía"),name),
+    el("div",{class:"field"},el("label",{},"Es"),seg("gender",[["f","Compañera"],["m","Compañero"]])),
+    el("div",{class:"field"},el("label",{},"Tu nivel de inglés"),seg("level",LEVELS.map(l=>[l,l])),el("span",{class:"small",text:"A1 "+LEVEL_TXT.A1+" · A2 "+LEVEL_TXT.A2+" · B1 "+LEVEL_TXT.B1+" · B2 "+LEVEL_TXT.B2+" · C1 "+LEVEL_TXT.C1})),
+    el("div",{class:"field"},el("label",{for:"set-goal"},"Meta diaria de mensajes"),goal),
+    el("div",{class:"field"},el("label",{for:"set-speed"},"Velocidad de la voz"),speed,el("button",{type:"button",class:"chip",style:"align-self:flex-start",onclick:()=>{p.speed=+speed.value;const g=S.profile.gender;S.profile.gender=p.gender;speak("Hi Miguel! This is how I sound.",+speed.value);S.profile.gender=g;}},ic("play"),"Probar voz")),
+    el("div",{class:"field"},el("label",{},"Leer respuestas en voz alta"),seg("autoSpeak",[[true,"Sí"],[false,"No"]])),
+    el("div",{class:"field"},el("label",{},"Cerebro de Maya"),seg("precise",[[false,"Sonnet 5.5 · natural y rápido"],[true,"Opus 5.5 · máxima precisión"]])),
+    el("div",{class:"field"},el("label",{},"El micrófono escucha en"),seg("micLang",[["en-US","Inglés"],["es-CR","Español"]])),
+    el("div",{class:"field"},el("label",{for:"set-key"},"Llave de la API de Claude"),keyIn,keyStatus,testKey,
+      el("span",{class:"small",text:"Créala en console.anthropic.com → API Keys. Se guarda solo en este teléfono y solo se usa para hablar con Claude."})),
+    el("div",{class:"field"},el("label",{for:"set-backup"},"Respaldo de tu progreso"),
+      el("div",{class:"tools"},
+        el("button",{type:"button",class:"chip",onclick:async()=>{const t=JSON.stringify(snapshot());try{await navigator.clipboard.writeText(t);toast("Respaldo copiado. Guárdalo en Notas.");}catch(e){backupBox.value=t;backupBox.select();toast("Copia el texto seleccionado y guárdalo en Notas.");}}},"Copiar respaldo"),
+        el("button",{type:"button",class:"chip",onclick:()=>{try{const d=JSON.parse(backupBox.value);if(!d||!d.profile)throw 0;S=Object.assign(fresh(),d);persist();close();renderAll();toast("Progreso restaurado.");}catch(e){toast("Ese respaldo no es válido.");}}},"Restaurar")),
+      backupBox),
+    el("div",{class:"btns"},el("button",{class:"btn",type:"button",onclick:close},"Cancelar"),
+      el("button",{class:"btn primary",type:"button",onclick:()=>{
+        if(keyIn.value.trim()!==apiKey())setKey(keyIn.value.trim());
+        p.companion=(name.value.trim()||"Maya").slice(0,20);p.speed=+speed.value;p.goal=Math.max(5,Math.min(200,parseInt(goal.value,10)||20));
+        const renamed=p.companion!==S.profile.companion||p.gender!==S.profile.gender;
+        S.profile=p;if(renamed&&!S.scene){S.chat=[greeting()];}
+        persist();close();renderAll();toast("Guardado.");}},"Guardar")),
+    el("button",{class:"btn",type:"button",style:"background:none;color:var(--muted);font-weight:500",onclick:()=>{S.scene=null;S.chat=[greeting()];persist();close();renderAll();show("talk");}},"Empezar una conversación nueva"));
+  const scrim=el("div",{class:"scrim",onclick:e=>{if(e.target===scrim)close();}},sheet);
+  root.replaceChildren(scrim);
+}
+$("#openSettings").addEventListener("click",openSettings);
+
+/* nav */
+function show(v){
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.v===v)));
+  ["talk","scenes","phrases","review","progress"].forEach(x=>{$("#v-"+x).hidden=x!==v;});
+  $("#composerWrap").hidden=v!=="talk";
+  if(v==="review")renderReview();if(v==="progress")renderProgress();if(v==="phrases")renderPhrases();
+  if(v==="talk")scrollDown();else $("#main").scrollTop=0;
+}
+document.querySelectorAll("nav.tabs button").forEach(b=>b.addEventListener("click",()=>show(b.dataset.v)));
+
+/* composer */
+const input=$("#input");
+function grow(){input.style.height="auto";input.style.height=Math.min(140,input.scrollHeight)+"px";}
+input.addEventListener("input",grow);
+input.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing&&window.matchMedia("(pointer:fine)").matches){e.preventDefault();send();}});
+$("#composer").addEventListener("submit",e=>{e.preventDefault();send();});
+
+function renderAll(){renderHeader();renderChat();renderScenes();renderPhrases();}
+renderAll();
+if(sampleState==="nokey"){addSys("Bienvenido, Miguel. Para que Maya pueda hablar contigo, pega tu llave de la API de Claude en Ajustes (solo se hace una vez).");setTimeout(openSettings,600);}
+if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(()=>{});}
+})();
+</script>
+</body>
+</html>

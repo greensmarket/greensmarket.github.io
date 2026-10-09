@@ -109,6 +109,23 @@ input[type="date"]::-webkit-date-and-time-value{text-align:left}
 .profile.flash{animation:pfFlash 1.4s ease-out}
 @keyframes pfFlash{0%{box-shadow:0 0 0 0 var(--citrus);border-color:var(--citrus)}30%{box-shadow:0 0 0 6px var(--citrus)}100%{box-shadow:0 0 0 0 transparent}}
 #pfPicker{z-index:30}
+.profile.pf-dark{background:#16241A;color:#F6F7F2;border:0;border-radius:20px;padding:16px;gap:12px}
+.pf-top{display:flex;align-items:center;gap:12px}
+.pf-dark .pf-av{background:#C5D63D;color:#16241A}
+.pf-dark .pf-txt{flex:1}
+.pf-dark .pf-txt b{font-family:var(--display);font-weight:800;font-size:1.25rem;letter-spacing:-.01em;color:#F6F7F2}
+.pf-dark .pf-txt span{color:#B9C4B4;font-size:.84rem}
+.pf-cambiar{flex:none;min-height:38px;padding:0 14px;border-radius:999px;border:1px solid #4A5C4E;background:transparent;color:#F6F7F2;font-weight:700;font-size:.85rem}
+.pf-cambiar:active{background:#233427}
+.pf-tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pf-tile{border-radius:14px;background:#233427;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.pf-tile span{font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;color:#9FB09A}
+.pf-tile b{font-size:.92rem;font-weight:600}
+.pf-tile.lime{background:#C5D63D;color:#16241A}
+.pf-tile.lime span{color:#3D4A12}
+.pf-tile.lime b{font-weight:800}
+.pk-act{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+
 .pk-help{margin:0 0 12px;color:var(--muted);font-size:.9rem}
 .pk-list{display:flex;flex-direction:column;gap:10px}
 .pk-item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:14px;padding:14px;min-height:64px}
@@ -312,7 +329,8 @@ img{-webkit-user-drag:none;pointer-events:none}
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pkTitle">
     <header><h2 id="pkTitle">¿Para cuál negocio es este pedido?</h2><button class="x" id="pkClose" aria-label="Cerrar">✕</button></header>
     <div class="body"><p class="pk-help">Toque el negocio. El pedido se enviará con ese nombre y ese teléfono.</p><div class="pk-list" id="pkList"></div>
-      <button class="pk-add" id="pkAdd" type="button">+ Agregar otro negocio o persona</button></div>
+      <button class="pk-add" id="pkAdd" type="button">+ Agregar otro negocio o persona</button>
+      <div class="pk-act"><button class="ghost" id="btnEditPf" type="button">Editar datos del actual</button><button class="linkbtn" id="btnForget" type="button">Borrar perfil actual</button></div></div>
   </div>
 </div>
 <section class="welcome" id="welcome" hidden aria-labelledby="wTitle">
@@ -337,13 +355,16 @@ img{-webkit-user-drag:none;pointer-events:none}
       <div class="inst-head"><b>Tenga Greens Market en su pantalla</b><button class="x sm" id="installClose" aria-label="Cerrar aviso">✕</button></div>
       <p id="installSteps"></p>
     </section>
-    <section class="profile" id="profileCard" hidden aria-label="Mis datos">
-      <span class="pf-lbl">Pedido a nombre de</span>
-      <div class="pf-main"><div class="pf-av" aria-hidden="true" id="pfAv"></div><div class="pf-txt"><b id="pfNeg"></b><span id="pfDatos"></span></div></div>
-      <span class="pf-ent" id="pfEnt"></span>
-      <button class="pf-switch" id="btnSwitch" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4 3 8l4 4"/><path d="M3 8h14"/><path d="m17 20 4-4-4-4"/><path d="M21 16H7"/></svg><span id="pfSwitchTxt">Cambiar de perfil</span><span class="pf-count" id="pfCount"></span></button>
-      <div class="pf-act"><button class="ghost" id="btnEditPf">Editar datos</button><button class="linkbtn" id="btnForget">Borrar perfil</button></div>
-      <span id="pfHola" hidden></span>
+    <section class="profile pf-dark" id="profileCard" hidden aria-label="Mis datos">
+      <div class="pf-top">
+        <div class="pf-av" aria-hidden="true" id="pfAv"></div>
+        <div class="pf-txt"><b id="pfHola"></b><span id="pfDatos"></span></div>
+        <button class="pf-cambiar" id="btnSwitch" type="button" aria-label="Cambiar de perfil">Cambiar</button>
+      </div>
+      <div class="pf-tiles">
+        <div class="pf-tile"><span>Pedido</span><b id="pfHoy"></b></div>
+        <div class="pf-tile lime"><span>Entrega</span><b id="pfEntrega"></b></div>
+      </div>
     </section>
     <section class="client" id="clientForm" aria-label="Datos del pedido">
       <div class="field"><label for="cNegocio">Negocio <span class="req">*</span></label><input id="cNegocio" placeholder="Ej. Restaurante, hotel, panadería" autocomplete="organization"></div>
@@ -762,14 +783,12 @@ function showPerfil(on){
   $("#btnCancelPf").hidden=!(perfiles().length && !on);
   $("#btnSavePf").textContent=pfModo==="editar"?"✓ Guardar cambios":"✓ Guardar perfil";
   if(on){
-    $("#pfAv").textContent=(p.n||"?").trim().charAt(0).toUpperCase();
-    $("#pfNeg").textContent=p.n;
+    $("#pfAv").textContent=(p.p||p.n||"?").trim().charAt(0).toUpperCase();
     $("#pfHola").textContent="Hola, "+(p.p.split(" ")[0]||p.n);
-    $("#pfDatos").textContent=p.p+" · "+p.t;
-    $("#pfEnt").textContent="Pedido de hoy · Entrega: "+fechaTxt().replace(",","");
-    const n=perfiles().length;
-    $("#pfSwitchTxt").textContent=n>1?"Cambiar de perfil":"Agregar otro negocio";
-    $("#pfCount").textContent=n>1?String(n):"";
+    $("#pfDatos").textContent=p.n+" · "+p.t;
+    const hoy=new Date(); const dd=["dom","lun","mar","mié","jue","vie","sáb"], mm=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+    $("#pfHoy").textContent="Hoy, "+dd[hoy.getDay()]+" "+hoy.getDate()+" "+mm[hoy.getMonth()];
+    const v=$("#cFecha").value; if(v){ const d=new Date(v+"T12:00:00"); const D=["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"]; $("#pfEntrega").textContent=D[d.getDay()]+" "+d.getDate()+" "+mm[d.getMonth()]; }
   }
 }
 function nuevoPerfil(){ pfModo="nuevo"; store.set("perfil",false); cargarPerfil(null); showPerfil(false); $("#cNegocio").focus(); }
@@ -787,14 +806,14 @@ function guardarPerfil(){
 }
 $("#btnSavePf").onclick=()=>{ const n=perfiles().length; if(guardarPerfil()) toast(perfiles().length>n?"Perfil guardado en este teléfono.":"Cambios guardados."); };
 $("#btnCancelPf").onclick=()=>{ pfModo=null; const p=activo(); cargarPerfil(p); store.set("perfil",!!p); showPerfil(!!p); };
-$("#btnEditPf").onclick=()=>{ pfModo="editar"; store.set("perfil",false); showPerfil(false); $("#cNegocio").focus(); };
+$("#btnEditPf").onclick=()=>{ cerrarSelector(); pfModo="editar"; store.set("perfil",false); showPerfil(false); $("#cNegocio").focus(); };
 $("#btnForget").onclick=function(){
   const p=activo(); if(!p) return;
   if(!this.dataset.armed){ this.dataset.armed="1"; this.textContent="¿Borrar “"+p.n+"”? Tocar otra vez"; setTimeout(()=>{ this.textContent="Borrar perfil"; delete this.dataset.armed; },3000); return; }
   const L=perfiles().filter(x=>x.id!==p.id); store.set("perfiles",L); this.textContent="Borrar perfil"; delete this.dataset.armed;
   if(L.length){ store.set("perfilActivo",L[0].id); cargarPerfil(L[0]); showPerfil(true); }
   else { store.set("perfilActivo",null); store.set("perfil",false); store.set("bienvenida",false); cargarPerfil(null); showPerfil(false); }
-  toast("Perfil borrado de este teléfono.");
+  cerrarSelector(); toast("Perfil borrado de este teléfono.");
 };
 // Pasar el perfil guardado de la versión anterior a la lista de perfiles
 (function(){ if(perfiles().length) return; const c=store.get("client"); if(c&&c.n&&c.p&&String(c.t||"").replace(/\D/g,"").length>=8){ const id="p"+Date.now().toString(36); store.set("perfiles",[{id,n:c.n,p:c.p,t:c.t}]); store.set("perfilActivo",id); } })();
@@ -830,7 +849,7 @@ function abrirSelector(){
   $("#pfPicker").hidden=false;
 }
 function cerrarSelector(){ $("#pfPicker").hidden=true; }
-$("#btnSwitch").onclick=()=>{ if(perfiles().length>1) abrirSelector(); else nuevoPerfil(); };
+$("#btnSwitch").onclick=abrirSelector;
 $("#pkClose").onclick=cerrarSelector;
 $("#pfPicker").onclick=e=>{ if(e.target.id==="pfPicker") cerrarSelector(); };
 $("#pkAdd").onclick=()=>{ cerrarSelector(); closeSheet(); nuevoPerfil(); };

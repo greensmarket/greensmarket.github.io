@@ -341,7 +341,7 @@ img{-webkit-user-drag:none;pointer-events:none}
     <form id="wForm" novalidate>
       <div class="field"><label for="wNeg">Negocio <span class="req">*</span></label><input id="wNeg" placeholder="Ej. Restaurante, hotel, panadería" autocomplete="organization"></div>
       <div class="field"><label for="wNom">Quién pide <span class="req">*</span></label><input id="wNom" placeholder="Su nombre" autocomplete="name"></div>
-      <div class="field"><label for="wTel">Celular (WhatsApp) <span class="req">*</span></label><div class="w-tel"><span>+506</span><input id="wTel" type="tel" inputmode="tel" placeholder="8888 8888" autocomplete="tel"></div></div>
+      <div class="field"><label for="wTel">Celular (WhatsApp) <span class="req">*</span></label><div class="w-tel"><span>+506</span><input id="wTel" type="tel" inputmode="numeric" maxlength="9" placeholder="8888 8888" autocomplete="tel"></div></div>
       <p class="warn" id="wWarn" hidden></p>
       <div class="w-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Sus datos se guardan solo en este teléfono. La próxima vez ya estarán listos.</span></div>
       <button class="btn wa" type="submit">Guardar y empezar mi pedido</button>
@@ -371,7 +371,7 @@ img{-webkit-user-drag:none;pointer-events:none}
       <input type="hidden" id="cArea" value="">
       <div class="field"><label for="cHoy">Fecha de pedido</label><input id="cHoy" type="date" readonly aria-readonly="true"><small class="hint" id="entregaTxt"></small><input type="hidden" id="cFecha"></div>
       <div class="field"><label for="cNombre">Quién pide <span class="req">*</span></label><input id="cNombre" placeholder="Nombre" autocomplete="name"></div>
-      <div class="field"><label for="cTel">Celular (WhatsApp) <span class="req">*</span></label><input id="cTel" type="tel" inputmode="tel" placeholder="8888 8888" autocomplete="tel"></div>
+      <div class="field"><label for="cTel">Celular (WhatsApp) <span class="req">*</span></label><input id="cTel" type="tel" inputmode="numeric" maxlength="9" placeholder="8888 8888" autocomplete="tel"></div>
       <div class="pf-save"><button class="btn wa small" id="btnSavePf" type="button">✓ Guardar perfil</button><button class="btn sec2 small" id="btnCancelPf" type="button" hidden>Cancelar</button><span>Se guarda solo en este teléfono. La próxima vez ya estará listo.</span></div>
     </section>
     <div class="repeat" id="repeatBox" hidden><button class="ghost" id="btnRepeat">↻ Repetir mi último pedido</button></div>
@@ -853,6 +853,10 @@ $("#btnSwitch").onclick=abrirSelector;
 $("#pkClose").onclick=cerrarSelector;
 $("#pfPicker").onclick=e=>{ if(e.target.id==="pfPicker") cerrarSelector(); };
 $("#pkAdd").onclick=()=>{ cerrarSelector(); closeSheet(); nuevoPerfil(); };
+
+// ===== Celular: solo 8 dígitos (formato 8888 8888) =====
+function telLimpio(v){ let d=String(v||"").replace(/\D/g,""); if(d.length>8&&d.startsWith("506")) d=d.slice(3); d=d.slice(0,8); return d.length>4?d.slice(0,4)+" "+d.slice(4):d; }
+["cTel","wTel"].forEach(id=>{ const el=$("#"+id); el.addEventListener("input",()=>{ const v=telLimpio(el.value); if(v!==el.value) el.value=v; }); el.addEventListener("paste",()=>setTimeout(()=>{ el.value=telLimpio(el.value); el.dispatchEvent(new Event("input")); },0)); });
 // ===== Datos obligatorios =====
 function faltan(){ const m=[];
   if(!$("#cNegocio").value.trim()) m.push(["cNegocio","Negocio"]);

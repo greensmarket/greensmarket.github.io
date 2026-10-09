@@ -109,6 +109,28 @@ input[type="date"]::-webkit-date-and-time-value{text-align:left}
 .profile.flash{animation:pfFlash 1.4s ease-out}
 @keyframes pfFlash{0%{box-shadow:0 0 0 0 var(--citrus);border-color:var(--citrus)}30%{box-shadow:0 0 0 6px var(--citrus)}100%{box-shadow:0 0 0 0 transparent}}
 #pfPicker{z-index:30}
+.rv-info{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.rv-cell{display:flex;flex-direction:column;gap:2px;min-width:0;position:relative}
+.rv-cell span{font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.rv-cell b{font-size:.92rem;font-weight:600;overflow-wrap:anywhere}
+.rv-cell.ent b{color:var(--leaf);font-weight:800}
+.rv-cell.bad b{color:var(--danger)}
+.rv-cambiar{align-self:flex-start;margin-top:4px;border:1.5px solid var(--leaf);background:transparent;color:var(--leaf);border-radius:999px;padding:3px 10px;font-weight:700;font-size:.75rem}
+.rv-head{display:flex;align-items:baseline;justify-content:space-between;margin:4px 0 2px}
+.rv-head>span{font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.rv-empty{border:0;background:transparent;color:var(--danger);font-weight:700;font-size:.85rem;padding:6px 0}
+.rv .rline{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.rv .rq{min-width:74px;font-weight:800;color:var(--leaf);font-size:.98rem}
+.rv .rtx{display:flex;flex-direction:column;gap:1px;flex:1;min-width:0}
+.rv .rn{font-weight:600}
+.rv .rnote{border:0;border-bottom:1px dashed transparent;background:transparent;padding:2px 0;font-size:.8rem;color:var(--muted);width:100%}
+.rv .rnote:focus{border-bottom-color:var(--line);outline:0}
+.rv .rdel{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:var(--muted);padding:0;flex:none}
+.rv .rdel svg{width:16px;height:16px}
+.actions .btn.sec2{padding:12px 8px;font-size:.88rem;white-space:nowrap}
+.actions .btn.send{display:flex;align-items:center;justify-content:center;gap:10px;padding:16px;font-size:1.02rem}
+.actions .btn.send svg{width:18px;height:18px}
+
 .profile.pf-dark{background:#16241A;color:#F6F7F2;border:0;border-radius:20px;padding:16px;gap:12px}
 .pf-top{display:flex;align-items:center;gap:12px}
 .pf-dark .pf-av{background:#C5D63D;color:#16241A}
@@ -431,11 +453,11 @@ img{-webkit-user-drag:none;pointer-events:none}
     <header><h2 id="sheetTitle">Su pedido</h2><button class="x" id="btnClose" aria-label="Cerrar">✕</button></header>
     <div class="body" id="review"></div>
     <div class="actions">
-      <a class="btn wa" id="btnSend" href="#" target="_blank" rel="noopener">Enviar pedido</a>
-      <a class="btn sec2" id="btnWA" href="#" target="_blank" rel="noopener" style="grid-column:1/-1">Avisar también por WhatsApp</a>
+      <a class="btn wa send" id="btnSend" href="#" target="_blank" rel="noopener"><span>Enviar pedido</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
       <button class="btn sec2" id="btnSaveDay" hidden style="grid-column:1/-1">Guardar en pedidos del día</button>
+      <a class="btn sec2" id="btnWA" href="#" target="_blank" rel="noopener">Avisar por WhatsApp</a>
       <button class="btn sec2" id="btnCopy">Copiar pedido</button>
-      <button class="btn sec2" id="btnEmpty">Vaciar</button>
+      <button class="rv-empty" id="btnEmpty" type="button">Vaciar</button>
     </div>
   </div>
 </div>
@@ -878,29 +900,35 @@ function marcarFaltan(){ const f=faltan(); ["cNegocio","cNombre","cTel"].forEach
   if(f.length){ showPerfil(false); toast("Para hacer el pedido complete: "+f.map(x=>x[1]).join(", ")); closeSheet(); $("#"+f[0][0]).focus(); }
   return f.length>0; }
 // ===== Revisión =====
+let EMPTY_BTN=null;
 function renderReview(){
+  EMPTY_BTN=EMPTY_BTN||$("#btnEmpty");
   const b=$("#review"); b.innerHTML="";
   const neg=$("#cNegocio").value.trim();
-  const meta=document.createElement("div"); meta.className="meta";
-  meta.innerHTML=`<div class="m-who"><span>A nombre de: <b class="m-neg"></b></span></div><div class="m-sub"></div><div><b>Entrega:</b> <span class="m-ent"></span></div>`;
-  meta.querySelector(".m-neg").textContent=neg||"Falta el nombre";
-  meta.querySelector(".m-sub").textContent=[$("#cNombre").value.trim(),$("#cTel").value.trim()].filter(Boolean).join(" · ");
-  meta.querySelector(".m-ent").textContent=fechaTxt()||"Sin fecha";
-  if(perfiles().length>1){ const cb=document.createElement("button"); cb.type="button"; cb.textContent="Cambiar"; cb.onclick=abrirSelector; meta.querySelector(".m-who").appendChild(cb); }
-  b.appendChild(meta);
+  const grid=document.createElement("div"); grid.className="rv-info";
+  const hoy=new Date(), dd=["dom","lun","mar","mié","jue","vie","sáb"], mm=["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"], D=["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+  const v=$("#cFecha").value, de=v?new Date(v+"T12:00:00"):null;
+  const cell=(lbl,val,cls)=>{ const c=document.createElement("div"); c.className="rv-cell"+(cls?" "+cls:""); const s=document.createElement("span"); s.textContent=lbl; const bb=document.createElement("b"); bb.textContent=val; c.append(s,bb); grid.appendChild(c); return c; };
+  const cn=cell("Negocio",neg||"Falta el nombre",neg?"":"bad");
+  cell("Pide",[$("#cNombre").value.trim().split(" ")[0]||"Falta",$("#cTel").value.trim()].filter(Boolean).join(" · "));
+  cell("Pedido",dd[hoy.getDay()].charAt(0).toUpperCase()+dd[hoy.getDay()].slice(1)+" "+hoy.getDate()+" "+mm[hoy.getMonth()]);
+  cell("Entrega",de?D[de.getDay()]+" "+de.getDate()+" "+mm[de.getMonth()]:"Sin fecha","ent");
+  if(perfiles().length>1){ const cb=document.createElement("button"); cb.type="button"; cb.className="rv-cambiar"; cb.textContent="Cambiar"; cb.onclick=abrirSelector; cn.appendChild(cb); }
+  b.appendChild(grid);
   const fl=faltan(); if(fl.length){ const w=document.createElement("p"); w.className="warn"; w.textContent="Para poder enviar el pedido, complete arriba: "+fl.map(x=>x[1]).join(", ")+"."; b.appendChild(w); }
+  const head=document.createElement("div"); head.className="rv-head"; const cnt=document.createElement("span"); const n=itemsCount(); cnt.textContent=n+(n===1?" producto":" productos"); head.append(cnt,EMPTY_BTN); b.appendChild(head);
   const rv=document.createElement("div"); rv.className="rv";
   lines().forEach(g=>{
-    
     g.its.forEach(it=>{
       const src = it.id && cart[it.id] ? cart[it.id] : custom.find(c=>c.id===it.id);
       const l=document.createElement("div"); l.className="rline";
-      l.innerHTML=`<span class="rq"></span><span class="rn"></span><button class="rdel">Quitar</button><input class="rnote" placeholder="Nota (ej. bien maduros, deshojada)">`;
+      l.innerHTML=`<span class="rq"></span><span class="rtx"><span class="rn"></span><input class="rnote" placeholder="Agregar nota"></span><button class="rdel" aria-label="Quitar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>`;
       l.querySelector(".rq").textContent=`${fmtQ(it.q)} ${unitLabel(it.u,it.q)}`;
       l.querySelector(".rn").textContent=it.n;
+      l.querySelector(".rdel").setAttribute("aria-label","Quitar "+it.n);
       const note=l.querySelector(".rnote"); note.value=src.note||""; note.setAttribute("aria-label","Nota para "+it.n);
       note.oninput=()=>{ src.note=note.value; save(); updateLinks(); };
-      l.querySelector(".rdel").onclick=()=>{ if(cart[it.id]) delete cart[it.id]; else custom=custom.filter(c=>c.id!==it.id); save(); refresh(); if(!itemsCount()) closeSheet(); };
+      l.querySelector(".rdel").onclick=()=>{ if(cart[it.id]) delete cart[it.id]; else custom=custom.filter(c=>c.id!==it.id); save(); refresh(); if(!itemsCount()) closeSheet(); else renderReview(); };
       rv.appendChild(l);
     });
   });

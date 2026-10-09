@@ -7,4 +7,4 @@ Esta rama **no** es la página pública (esa está en la rama `main`). Aquí sol
 - `fuentes/panel-prueba.html`: el Panel de prueba con resumen, buscador y etiquetas.
 - `respaldos/`: versiones anteriores de cada cambio, la página vieja que estaba en Claude y la lista de códigos de Qupos.
 
-Puntos de regreso en la página pública (etiquetas): antes-encabezado, antes-bienvenida, antes-cambio-perfil, antes-tarjeta-A1, antes-revisar, antes-tema, antes-aviso.
+Para regresar a una versión anterior de la página, se usan los archivos `respaldos/az-antes-*.html` (cada uno es la página justo antes de ese cambio).

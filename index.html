@@ -855,7 +855,7 @@ $("#pfPicker").onclick=e=>{ if(e.target.id==="pfPicker") cerrarSelector(); };
 $("#pkAdd").onclick=()=>{ cerrarSelector(); closeSheet(); nuevoPerfil(); };
 
 // ===== Celular: solo 8 dígitos (formato 8888 8888) =====
-function telLimpio(v){ let d=String(v||"").replace(/\D/g,""); if(d.length>8&&d.startsWith("506")) d=d.slice(3); d=d.slice(0,8); return d.length>4?d.slice(0,4)+" "+d.slice(4):d; }
+function telLimpio(v){ let d=String(v||"").replace(/^\s*\+\s*506[\s-]*/,"").replace(/\D/g,""); if(d.length>8&&d.startsWith("506")) d=d.slice(3); d=d.slice(0,8); return d.length>4?d.slice(0,4)+" "+d.slice(4):d; }
 ["cTel","wTel"].forEach(id=>{ const el=$("#"+id); el.addEventListener("input",()=>{ const v=telLimpio(el.value); if(v!==el.value) el.value=v; }); el.addEventListener("paste",()=>setTimeout(()=>{ el.value=telLimpio(el.value); el.dispatchEvent(new Event("input")); },0)); });
 // ===== Datos obligatorios =====
 function faltan(){ const m=[];

@@ -811,8 +811,7 @@ ${cat}
 REGLAS:
 - Cada encabezado como "Pedido coyol bar" o "Pedido panadería #2" inicia un pedido distinto. "negocio" es el nombre del cliente (ej. "Coyol", "Panadería #2", "ESH") y "area" el área si aparece (Bar, Cocina, Panadería).
 - Usa el nombre EXACTO del catálogo cuando el producto coincida aunque esté mal escrito o con sinónimo: ochuva/uchua→Uchuva, blueberry→Arándano, gengibre→Jengibre, yerba buena→Hierbabuena, microgrins→Microgreens mixtos, zuquini→Zucchini, mangas→Mango, limones mandarinos→Limón mandarina, limos lima→Limón lima, cherrys→Tomate cherry, cualantro→Culantro.
-- Unidades válidas: kg, g, und, bandeja, rollo, bolsa. "kilo(s)"/"k"→kg, "gramos"/"gr"→g, "cajita(s)"/"caja(s)"→bandeja, "paquete(s)"→bolsa. "1/2 k", "1/2 kilo" o "medio kilo" = 500 g: si el producto acepta g ponga q 500 u "g"; si no, 0.5 kg. "1/4 k" = 250 g.
-- Equivalencias de Greens Market: "brotes" → Microgreens mixtos; "manga(s)" → Mango; "naranja(s) internacional(es)" → Naranja importada; "elotes" → Maíz dulce; "coyote" → Culantro coyote; "castilla" → Culantro castilla; "vainica" en paquetes → Vainica grande en bolsa.
+- Unidades válidas: kg, g, und, bandeja, rollo, bolsa. "kilo(s)"/"k"→kg, "gramos"/"gr"→g, "cajita(s)"/"caja(s)"→bandeja, "paquete(s)"→bolsa, "medio kilo"→0.5 kg.
 - Si no indica unidad, usa la primera unidad del catálogo para ese producto.
 - Si el producto no está en el catálogo, deja el nombre como lo escribió el cliente, en mayúscula inicial.
 - Pon en "note" pedidos especiales como "maduros", "deshojada", "que esté buena". Si una cantidad es ambigua, ponlo en "note".
@@ -844,7 +843,7 @@ const PHRASES = [
   [/\bhierba\s*buena\b|\byerba\s*buena\b|\bhierbabuena\b/g,"hierbabuena"],
   [/\bzacate\s+(de\s+)?limon\b/g,"zacate limon"],[/\bmoras?\s+o\s+frambuesas?\b/g,"mora"],
   [/\bpapas?\s+mini\s+bbs?\b|\bmini\s+papas?\b/g,"papa mini baby"],[/\bmini\s+papa\b/g,"papa mini baby"],
-  [/\bnaranjas?\s+internacional(es)?\b/g,"naranja importada"],[/\bbrotes?\b(?!\s+de\b)/g,"microgreens mixto"],[/\bchiles?\s+dulces?\b/g,"chile dulce"],[/\bplatanos?\s+maduros?\b/g,"platano maduro"],[/\bplatanos?\s+verdes?\b/g,"platano verde"],
+  [/\bchiles?\s+dulces?\b/g,"chile dulce"],[/\bplatanos?\s+maduros?\b/g,"platano maduro"],[/\bplatanos?\s+verdes?\b/g,"platano verde"],
   [/\bhojas?\s+de\s+platanos?\b/g,"hoja platano"],[/\bcalabaza\s+mantequilla\b/g,"ayote mantequilla"],
   [/\blimon(es)?\s+mandarin(o|a)s?\b/g,"limon mandarina"],[/\blim(o|os|on|ones)\s+limas?\b/g,"limon lima"],
   [/\blimon(es)?\s+m(e|a)[cs]inos?\b/g,"limon mesino"],[/\bcrimini\b/g,"hongo crimini"],[/\blimon(es)?\s+persas?\b/g,"limon lima"],[/\bnaranjas?\s+washington\b/g,"naranja importada"],[/\bportobel+os?\b/g,"hongo portobello"],
@@ -894,7 +893,7 @@ const unitOf = w => { w=norm(w||""); if(/^(kilo|kg|k)/.test(w)) return "kg"; if(
   if(/^(bandeja|bndeja|cajita|cajista|caja)/.test(w)) return "bandeja"; if(/^rollo/.test(w)) return "rollo"; if(/^bolsa/.test(w)) return "bolsa"; if(/^paquete/.test(w)) return "paquete";
   if(/^(unidad|und|una|mata)/.test(w)) return "und"; return null; };
 function parseItemLine(line){
-  let t=" "+norm(line).replace(/[.;]+$/,"").replace(/(\d+)\s+(\d)\/(\d)/g,(m,x,y,z)=>String(+x+(+y)/(+z))).replace(/(\d)\/(\d)/g,(m,y,z)=>String((+y)/(+z))).replace(/(\d+)\s*x\s*(\d+)/g,(m,a,b)=>String(+a*+b)).replace(/\bband\b/g,"bandejas").replace(/(\d)\s*k\b/g,"$1 kilo")+" ";
+  let t=" "+norm(line).replace(/[.;]+$/,"").replace(/(\d+)\s*x\s*(\d+)/g,(m,a,b)=>String(+a*+b)).replace(/\bband\b/g,"bandejas").replace(/(\d)\s*k\b/g,"$1 kilo")+" ";
   let q=null,u=null,m;
   if((m=t.match(/\s(\d+(?:[.,]\d+)?)\s*kilos?\s+y\s+medio\b/))){ q=parseFloat(m[1].replace(",","."))+0.5; u="kg"; t=t.replace(m[0]," "); }
   else if((m=t.match(/\smedio\s+(kilos?|kg)?\s*/))){ q=0.5; u="kg"; t=t.replace(m[0]," "); }
@@ -906,7 +905,7 @@ function parseItemLine(line){
   const nt=norm(line); const name=id?BY[id].n:"";
   const notes=NOTE_WORDS.filter(([k])=>nt.includes(k) && !norm(name).includes(k.split(" ")[0])).map(x=>x[1]);
   const uniqNotes=[...new Set(notes)].filter((n,i,a)=>!(n==="maduros"&&a.includes("bien maduros")));
-  if(id){ const p=BY[id]; let uu=u||(p.u.includes("und")?"und":p.u[0]); if(!p.u.includes(uu)){ if(uu==="paquete"&&p.u.includes("bolsa")) uu="bolsa"; else if(uu==="bolsa"&&p.u.includes("paquete")) uu="paquete"; } let qq=q; if(uu==="kg"&&qq<1){ qq=Math.round(qq*1000); uu="g"; } return {n:p.n,q:qq,u:uu,note:uniqNotes.join(", ")}; }
+  if(id){ const p=BY[id]; let uu=u||(p.u.includes("und")?"und":p.u[0]); if(!p.u.includes(uu)){ if(uu==="paquete"&&p.u.includes("bolsa")) uu="bolsa"; else if(uu==="bolsa"&&p.u.includes("paquete")) uu="paquete"; } return {n:p.n,q,u:uu,note:uniqNotes.join(", ")}; }
   const raw=t.replace(/^\s*(de|del)\s+/,"").trim();
   return {n:raw.charAt(0).toUpperCase()+raw.slice(1),q,u:u||"und",note:uniqNotes.join(", "),unknown:true};
 }
@@ -1325,9 +1324,7 @@ const QDESC=Object.fromEntries(QUPOS);
 PANEL.alias={}; PANEL.autoTried=new Set(); PANEL.autoBusy=false; PANEL.avisados=new Set();
 const NOUNIT=new Set(["und","unidad","unidade","kg","kilo","g","gr","gramo","x"]);
 const toks=w=>norm(w).replace(/(\d)([a-z])/g,"$1 $2").replace(/[^a-z0-9ñ]+/g," ").split(" ").filter(x=>x&&!STOP.has(x)).map(stem).filter(x=>!NOUNIT.has(x));
-const FRASES=[[/\bnaranjas?\s+internacional(es)?\b/g,"naranja importada"],[/\bbrotes?\b(?!\s+de\b)/g,"microgreens mixtos"],[/\bmangas?\b/g,"mango"],[/\belotes?\b/g,"maiz dulce"]];
-const frases=s=>{ let t=norm(s); FRASES.forEach(([r,v])=>{ t=t.replace(r,v); }); return t; };
-function localMatch(n){ const t=new Set(toks(frases(n))); if(!t.size) return null; let best=[],bl=0;
+function localMatch(n){ const t=new Set(toks(n)); if(!t.size) return null; let best=[],bl=0;
   P.forEach(p=>{ const pt=toks(p[1]); if(pt.length&&pt.every(x=>t.has(x))&&t.size-pt.length<=1){ if(pt.length>bl){best=[p];bl=pt.length;} else if(pt.length===bl) best.push(p);} });
   return best.length===1?BY[best[0][0]]:null; }
 function saveAlias(){ if(!PANEL.db) return; clearTimeout(PANEL.aliasT); PANEL.aliasT=setTimeout(()=>PANEL.db.doc("config/alias").set({map:PANEL.alias}).catch(()=>{}),600); }

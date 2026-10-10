@@ -44,12 +44,13 @@ ol li{margin:6px 0}
   </div>
 
   <button class="btn" id="listo" type="button">Ya lo agregué · Abrir inventario</button>
-  <a class="btn ghost" id="abrir" href="https://claude.ai/artifact/Q5D1PWXmc9BsfmZbFAzTf4">Solo abrir el inventario</a>
+  <a class="btn ghost" id="abrir" href="https://claude.ai/code/artifact/bad8904b-1c5a-4b40-ac1c-ec49e82c39ff">Solo abrir el inventario</a>
+  <p class="note" id="iosnote" hidden>¿Se abrió la app de Claude en vez del inventario? Vuelva aquí, <b>mantenga presionado</b> el botón "Solo abrir el inventario" y elija <b>Abrir en Safari</b>. El iPhone lo recordará.</p>
   <p class="note">Para entrar necesita su cuenta de Claude con acceso a esta app. Sus datos siguen privados dentro de la app.</p>
 </main>
 <script>
 (function(){
-  var DEST = "https://claude.ai/artifact/Q5D1PWXmc9BsfmZbFAzTf4";
+  var DEST = "https://claude.ai/code/artifact/bad8904b-1c5a-4b40-ac1c-ec49e82c39ff";
   var KEY = "lanzador-samarasushi";
   var forzar = /[?&](instalar|ver)\b/.test(location.search) || location.hash === "#instalar";
   function get(){ try { return localStorage.getItem(KEY); } catch(e){ return null; } }
@@ -70,6 +71,7 @@ ol li{margin:6px 0}
       "Menú de los <b>tres puntos ⋮</b> → <b>Guardar y compartir</b> → <b>Crear acceso directo</b> (en Edge: <b>Aplicaciones → Instalar este sitio</b>).",
       "Marque <b>Abrir como ventana</b> y confirme."
     ];
+  if (ios) document.getElementById("iosnote").hidden = false;
   document.getElementById("lista").innerHTML = pasos.map(function(p){ return "<li>" + p + "</li>"; }).join("");
   document.getElementById("listo").onclick = function(){ set(); location.href = DEST; };
   // Ya instalado: abre directo la app (agregue ?instalar a la dirección para ver estas instrucciones otra vez).

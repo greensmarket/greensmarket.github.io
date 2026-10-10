@@ -775,7 +775,7 @@ function renderCatalog(){
   }
 }
 
-function refresh(){ try{ aplicarDueno(); }catch(e){}
+function refresh(){
   renderCatalog();
   const n=itemsCount();
   $("#count").textContent=n;
@@ -1440,8 +1440,7 @@ function isoDay(t){ return `${t.getFullYear()}-${String(t.getMonth()+1).padStart
   }catch(e){}
 })();
 // ===== Modo dueño: 5 toques seguidos al logo muestran/ocultan el botón Panel en este teléfono =====
-function esDueno(){ const TEL_DUENO=["60617914","63669195"]; if(store.get("dueno")) return true; const ps=store.get("perfiles")||[]; return ps.some(x=>TEL_DUENO.includes(String(x.t||"").replace(/\D/g,"").slice(-8))); }
-function aplicarDueno(){ const b=$("#duenoBar"); if(b) b.hidden=!esDueno(); }
+function aplicarDueno(){ const b=$("#duenoBar"); if(b) b.hidden=!store.get("dueno"); }
 aplicarDueno();
 (function(){ const lg=document.querySelector(".brand .logo"); if(!lg) return; let n=0,t=0;
   lg.addEventListener("click",()=>{ const now=Date.now(); n = (now-t<1500) ? n+1 : 1; t=now;

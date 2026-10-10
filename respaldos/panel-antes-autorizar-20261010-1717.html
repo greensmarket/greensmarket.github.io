@@ -161,14 +161,6 @@ input[type="date"]::-webkit-date-and-time-value{text-align:left}
 .autoav h3{margin:0 0 6px;font-size:.98rem;color:var(--danger)}.autoav ul{margin:0;padding-left:18px;font-size:.9rem}.autoav p{margin:6px 0 0;font-size:.82rem;color:var(--muted)}
 .autoav.ok{border-color:var(--line);background:var(--surface)}.autoav.ok h3{color:var(--leaf)}
 small.fix{display:block;font-size:.72rem;color:var(--muted)}
-.sheet.chk{border-radius:20px;max-width:440px;margin:16px;width:calc(100% - 32px)}
-.chk-in{padding:24px 20px 18px;text-align:center}.chk-in h2{margin:10px 0 6px;font-size:1.2rem}.chk-in p{margin:0 0 12px;color:var(--muted);font-size:.92rem}
-.chk-in h3{text-align:left;font-size:.9rem;margin:12px 0 4px}.chk-in ul{text-align:left;margin:0;padding-left:18px;font-size:.88rem;max-height:30vh;overflow:auto}
-.chk-in .row2{display:flex;gap:8px;margin-top:16px}.chk-in .row2 .btn{flex:1}
-.chk-ico{width:56px;height:56px;border-radius:999px;margin:0 auto;display:grid;place-items:center;font-size:28px;font-weight:800;background:var(--leaf);color:var(--leaf-ink)}
-.chk-in.bad .chk-ico{background:var(--danger);color:#fff}.chk-in.bad h2{color:var(--danger)}
-.chk-ico.spin{background:transparent;border:5px solid var(--line);border-top-color:var(--leaf);animation:gira .8s linear infinite}
-@keyframes gira{to{transform:rotate(360deg)}}
 .addbox .field{margin:0 0 10px}.addbox .field label{display:block;font-size:.8rem;font-weight:700;margin-bottom:4px}
 .addbox .field input{width:100%;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:11px 12px;font:inherit;color:var(--ink)}
 .pfotos{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.pfotos .ft{position:relative}.pfotos img{width:72px;height:72px;object-fit:cover;border-radius:10px;border:1px solid var(--line);display:block}
@@ -1180,7 +1172,7 @@ async function askTallyOnce(){
 }
 function subscribeDay(){
   if(PANEL.unsub){ PANEL.unsub(); PANEL.unsub=null; }
-  watchFacturados(); watchPesos(); watchEnviado();
+  watchFacturados(); watchPesos();
   const d=$("#dDate").value; mergeDay();
   PANEL.unsub = PANEL.db.collection("pedidos").where("fecha","==",d).onSnapshot(snap=>{
     PANEL.dbOrders = snap.docs.map(s=>({id:s.id,...s.data()})); mergeDay();
@@ -1225,68 +1217,13 @@ function orderText(o){
   [...(o.items||[])].sort((a,b)=>a.n.localeCompare(b.n,"es")).forEach(i=>{ s+=`• ${fmtQ(i.q)} ${uLbl(i.u,i.q)} — ${i.n}${i.note?" ("+i.note+")":""}\n`; });
   return s+`\nTotal: ${(o.items||[]).length} productos`;
 }
-function actionRow(text,pdfFn,pdfLabel,wordFn,gate){
+function actionRow(text,pdfFn,pdfLabel,wordFn){
   const r=document.createElement("div"); r.className="row2";
-  if(pdfFn){ const pd=document.createElement("button"); pd.className="btn wa small"; pd.textContent=pdfLabel||"Crear PDF";
-    const hacer=async()=>{ pd.disabled=true; const t=pd.textContent; pd.textContent="Creando PDF…"; try{ await pdfFn(); } finally { pd.disabled=false; pd.textContent=t; } };
-    pd.onclick=()=> gate ? revisarYAutorizar("PDF",hacer) : hacer(); r.appendChild(pd); }
-  if(wordFn){ const wd=document.createElement("button"); wd.className="btn wa small word"; wd.textContent="Word";
-    const hacer=async()=>{ try{ await saveDocx(wordFn()); }catch(e){ toast("No se pudo crear el Word."); } };
-    wd.onclick=()=> gate ? revisarYAutorizar("Word",hacer) : hacer(); r.appendChild(wd); }
+  if(pdfFn){ const pd=document.createElement("button"); pd.className="btn wa small"; pd.textContent=pdfLabel||"Crear PDF"; pd.onclick=async()=>{ pd.disabled=true; const t=pd.textContent; pd.textContent="Creando PDF…"; try{ await pdfFn(); } finally { pd.disabled=false; pd.textContent=t; } }; r.appendChild(pd); }
+  if(wordFn){ const wd=document.createElement("button"); wd.className="btn wa small word"; wd.textContent="Word"; wd.onclick=()=>{ try{ saveDocx(wordFn()); }catch(e){ toast("No se pudo crear el Word."); } }; r.appendChild(wd); }
   const wa=document.createElement("a"); wa.className="btn sec2 small"; wa.textContent="WhatsApp (texto)"; wa.href=waLink(text); wa.target="_blank"; wa.rel="noopener";
   const cp=document.createElement("button"); cp.className="btn sec2 small"; cp.textContent="Copiar"; cp.onclick=()=>copy(text,"Copiado");
   r.append(wa,cp); return r;
-}
-
-// ===== Revisar y autorizar antes de enviar el pedido (Word / PDF) =====
-PANEL.enviado=null; let envUnsub=null;
-function watchEnviado(){ if(envUnsub){ envUnsub(); envUnsub=null; } PANEL.enviado=null; if(!PANEL.db) return;
-  envUnsub=PANEL.db.doc("config/enviado_"+$("#dDate").value).onSnapshot(sn=>{ PANEL.enviado=sn.exists?sn.data():null; renderAviso(); },()=>{}); }
-function marcarEnviado(tipo){ if(!PANEL.db) return; const at=new Date().toISOString();
-  PANEL.enviado={at,tipo,ids:PANEL.orders.map(o=>o.id)}; renderAviso();
-  PANEL.db.doc("config/enviado_"+$("#dDate").value).set(PANEL.enviado).catch(()=>{}); }
-function reabrir(){ if(!PANEL.db) return; PANEL.db.doc("config/enviado_"+$("#dDate").value).delete().catch(()=>{}); PANEL.enviado=null; PANEL.autoTried=new Set(); mergeDay(); }
-function problemas(){
-  const P2={malos:[],pend:[],dudas:[],vacios:[],raros:[]};
-  PANEL.orders.forEach(o=>{ const who=(o.negocio||"Sin nombre")+(o.area?" · "+o.area:"");
-    if(!o.items||!o.items.length) P2.vacios.push(who);
-    (o.items||[]).forEach(i=>{
-      if(i.estado==="noqupos") P2.malos.push(`${i.n} — ${who}`);
-      else if(i.estado==="nombre"||i.estado==="codigo") P2.pend.push(`${i.n} — ${who}`);
-      else if(i.orig){ const a=PANEL.alias[norm(i.orig).trim()]; if(a&&a.seguro===false) P2.dudas.push(`${who}: escribió «${i.orig}» → ${i.n}`); }
-      if(!(i.q>0)) P2.raros.push(`${i.n} sin cantidad — ${who}`);
-      else if((i.u==="kg"&&i.q>60)||(i.u==="und"&&i.q>300)||(i.u==="g"&&i.q>20000)) P2.raros.push(`${i.n}: ${fmtQ(i.q)} ${uLbl(i.u,i.q)} (cantidad muy alta) — ${who}`);
-    }); });
-  return P2;
-}
-function revisarYAutorizar(tipo,hacer){
-  const sc=document.createElement("div"); sc.className="scrim"; sc.style.alignItems="center";
-  const sh=document.createElement("div"); sh.className="sheet chk"; sh.setAttribute("role","dialog"); sh.setAttribute("aria-modal","true"); sh.setAttribute("aria-live","polite");
-  sc.appendChild(sh); document.body.appendChild(sc);
-  const cerrar=()=>sc.remove();
-  sh.innerHTML=`<div class="chk-in"><div class="chk-ico spin" aria-hidden="true"></div><h2>Revisando el pedido…</h2><p>Estoy comprobando productos, códigos de Qupos y cantidades antes de enviarlo.</p></div>`;
-  (async()=>{
-    const t0=Date.now();
-    if(!PANEL.enviado && PANEL.sample && pendientes().length){ autoResolver(); }
-    while((PANEL.autoBusy) && Date.now()-t0<25000) await new Promise(r=>setTimeout(r,300));
-    await new Promise(r=>setTimeout(r,Math.max(0,1400-(Date.now()-t0))));
-    const pr=problemas(); const graves=pr.malos.length+pr.pend.length+pr.vacios.length+pr.raros.length;
-    const sec=(t,l)=>l.length?`<h3>${t}</h3><ul>${l.map(x=>`<li>${x.replace(/</g,"&lt;")}</li>`).join("")}</ul>`:"";
-    const nC=PANEL.orders.length, nP=totals().length;
-    if(!graves){
-      sh.innerHTML=`<div class="chk-in ok"><div class="chk-ico" aria-hidden="true">✓</div><h2>Todo está bien · Autorizado</h2><p>${nC} pedido(s), ${nP} productos. Todos con código de Qupos.</p>${sec("Correcciones que hice (confírmelas)",pr.dudas)}
-        <div class="row2"><button class="btn wa" id="chkGo">Descargar ${tipo} y enviar</button><button class="btn sec2" id="chkNo">Cancelar</button></div></div>`;
-    } else {
-      sh.innerHTML=`<div class="chk-in bad"><div class="chk-ico" aria-hidden="true">!</div><h2>Revise antes de enviar</h2>
-        ${sec("No están en Qupos",pr.malos)}${sec("Sin revisar todavía",pr.pend)}${sec("Cantidades para revisar",pr.raros)}${sec("Pedidos vacíos",pr.vacios)}${sec("Correcciones dudosas",pr.dudas)}
-        <div class="row2"><button class="btn sec2" id="chkNo">Volver y corregir</button><button class="btn sec2" id="chkGo">Enviar de todas formas</button></div></div>`;
-    }
-    sh.querySelector("#chkNo").onclick=cerrar;
-    sh.querySelector("#chkGo").onclick=async()=>{ const b=sh.querySelector("#chkGo"); b.disabled=true; b.textContent="Creando "+tipo+"…";
-      PANEL.lastSaved=false; await hacer(); cerrar(); if(PANEL.lastSaved) marcarEnviado(tipo); };
-    sh.querySelector("#chkGo").focus();
-  })();
-  sc.addEventListener("click",e=>{ if(e.target===sc) cerrar(); });
 }
 // ===== Códigos de Qupos =====
 // En Qupos cada producto tiene un código por unidad (ej. AGUACATE KG = 3, AGUACATE UND = 4). Clave: "id|unidad".
@@ -1344,7 +1281,7 @@ function pendientes(){ const out={};
     else if(i.estado==="codigo"){ const p=prodOf(i.n); const k="#"+p.id+"|"+i.u; if(!PANEL.autoTried.has(k)) out[k]={ref:k,tipo:"codigo",producto:p.n,unidad:i.u}; } }));
   return Object.values(out); }
 async function autoResolver(){
-  if(PANEL.autoBusy||!PANEL.sample||PANEL.enviado) return; const list=pendientes(); if(!list.length) return;
+  if(PANEL.autoBusy||!PANEL.sample) return; const list=pendientes(); if(!list.length) return;
   PANEL.autoBusy=true; list.forEach(x=>PANEL.autoTried.add(x.ref)); renderAviso();
   const cat=P.map(p=>`${p[0]} | ${p[1]} | ${p[3].join(",")}`).join("\n");
   const qp=QUPOS.map(([c,d])=>`${c} | ${d}`).join("\n");
@@ -1386,12 +1323,6 @@ Responda SOLO un arreglo JSON: [{"ref":"...","catalogo":"id o null","qupos":"có
 }
 function renderAviso(){
   const box=$("#autoAviso"); if(!box) return;
-  if(PANEL.enviado){ const E=PANEL.enviado; const nuevos=PANEL.orders.filter(o=>!(E.ids||[]).includes(o.id));
-    box.hidden=false; box.className="autoav "+(nuevos.length?"":"ok"); box.innerHTML="";
-    const h=document.createElement("h3"); h.textContent=`✓ Pedido enviado al proveedor (${E.tipo}, ${hora(E.at)}) · ya no se revisa`; box.appendChild(h);
-    if(nuevos.length){ const p=document.createElement("p"); p.style.color="var(--danger)"; p.style.fontWeight="700"; p.textContent="Llegó después de enviar: "+nuevos.map(o=>o.negocio||"Sin nombre").join(", ")+". Mándelo aparte al proveedor."; box.appendChild(p); }
-    const b=document.createElement("button"); b.className="btn sec2 small"; b.textContent="Volver a revisar"; b.style.marginTop="8px"; b.onclick=reabrir; box.appendChild(b);
-    return; }
   const malos=[], arreglados=[];
   PANEL.orders.forEach(o=>o.items.forEach(i=>{ const who=(o.negocio||"Sin nombre")+(o.area?" · "+o.area:"");
     if(i.estado==="noqupos") malos.push({n:i.n,who}); else if(i.orig){ const a=PANEL.alias[norm(i.orig).trim()]; if(a&&a.seguro===false) arreglados.push({de:i.orig,a:i.n,who}); } }));
@@ -1700,7 +1631,7 @@ function headerXml(title,lines){
 async function saveDocx(r){
   const dl=window.claude&&claude.use?await claude.use("downloads"):null;
   if(!dl){ toast("No se pudo guardar el Word desde aquí."); return; }
-  try{ const res=await dl.save({filename:r.name,data:r.blob}); if(res&&res.status==="saved") PANEL.lastSaved=true; if(res&&res.status==="saved") toast((/\.xlsx$/.test(r.name)?"Excel":"Word")+" listo. Compártalo por WhatsApp o ábralo desde Archivos."); }
+  try{ const res=await dl.save({filename:r.name,data:r.blob}); if(res&&res.status==="saved") toast((/\.xlsx$/.test(r.name)?"Excel":"Word")+" listo. Compártalo por WhatsApp o ábralo desde Archivos."); }
   catch(e){ if(e&&e.code==="unavailable") toast("Este dispositivo no permite guardar archivos aquí."); else if(e&&e.code&&!/cancel|declin|abort/i.test(e.code)) toast("No se pudo crear el Word. Intente de nuevo."); }
 }
 // ===== PDF =====
@@ -1738,7 +1669,7 @@ async function savePdf(doc,filename){
   const blob=doc.output("blob");
   const dl=window.claude&&claude.use?await claude.use("downloads"):null;
   if(!dl){ toast("No se pudo guardar el PDF desde aquí. Use “WhatsApp (texto)”."); return; }
-  try{ const r=await dl.save({filename,data:blob}); if(r&&r.status==="saved") PANEL.lastSaved=true; if(r&&r.status==="saved") toast("PDF listo. Compártalo por WhatsApp desde Archivos o el menú Compartir."); }
+  try{ const r=await dl.save({filename,data:blob}); if(r&&r.status==="saved") toast("PDF listo. Compártalo por WhatsApp desde Archivos o el menú Compartir."); }
   catch(e){ if(e&&e.code==="unavailable") toast("Este dispositivo no permite guardar archivos aquí. Use “WhatsApp (texto)”."); else if(e&&e.code&&!/cancel|declin|abort/i.test(e.code)) toast("No se pudo crear el PDF. Intente de nuevo."); }
 }
 // ===== Hojas para imprimir (estilo tabla, como la hoja de pedidos de Greens Market) =====
@@ -1893,7 +1824,7 @@ function renderDay(){
   if(!n){ $("#addBox").open=true; const e=document.createElement("p"); e.className="empty"; e.textContent="No hay pedidos guardados para este día. Pegue arriba los que le lleguen por WhatsApp, o arme uno en “Pedir” y guárdelo."; out.appendChild(e); return; }
   if(PANEL.view==="fac"){ renderFacturar(groups,out); return; }
   if(PANEL.view==="total"){
-    out.appendChild(actionRow(totalText(),()=>pdfTotal(groups),"PDF del pedido total",()=>docxTotal(groups),true));
+    out.appendChild(actionRow(totalText(),()=>pdfTotal(groups),"PDF del pedido total",()=>docxTotal(groups)));
     const w=document.createElement("div"); w.className="tblwrap";
     const t=document.createElement("table"); t.className="tot";
     t.innerHTML="<thead><tr><th>Producto</th><th>Total</th><th>Por cliente</th></tr></thead><tbody></tbody>";
@@ -1905,7 +1836,7 @@ function renderDay(){
     });
     w.appendChild(t); out.appendChild(w);
   } else {
-    out.appendChild(actionRow(groups.map(orderText).join("\n\n———\n\n"),()=>pdfSheet(groups),"PDF de los pedidos por cliente",()=>docxSheet(groups),true));
+    out.appendChild(actionRow(groups.map(orderText).join("\n\n———\n\n"),()=>pdfSheet(groups),"PDF de los pedidos por cliente",()=>docxSheet(groups)));
     groups.forEach(o=>{
       const c=document.createElement("article"); c.className="ocard";
       const h=document.createElement("header");

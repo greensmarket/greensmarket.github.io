@@ -157,10 +157,6 @@ input[type="date"]::-webkit-date-and-time-value{text-align:left}
 .addbox summary{font-weight:700;color:var(--leaf);cursor:pointer}
 .addbox .lead{font-size:.85rem}
 .addbox textarea{min-height:130px}
-.addbox .field{margin:0 0 10px}.addbox .field label{display:block;font-size:.8rem;font-weight:700;margin-bottom:4px}
-.addbox .field input{width:100%;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:11px 12px;font:inherit;color:var(--ink)}
-.pfotos{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.pfotos .ft{position:relative}.pfotos img{width:72px;height:72px;object-fit:cover;border-radius:10px;border:1px solid var(--line);display:block}
-.pfotos button{position:absolute;top:-6px;right:-6px;width:24px;height:24px;border-radius:999px;border:0;background:var(--ink);color:var(--bg);font-size:.75rem;padding:0}
 .addbox .row2 .btn{flex:1 1 auto}
 .addbox .row2 .btn.wa{flex:1 1 100%}
 .pv{display:grid;gap:8px}
@@ -302,12 +298,10 @@ img{-webkit-user-drag:none;pointer-events:none}
     <p class="live wait" id="liveState" role="status" onclick="askTallyOnce()"></p>
     <details class="addbox rem" id="remBox"></details>
     <details class="addbox" id="addBox">
-      <summary>+ Agregar pedidos de WhatsApp o en foto</summary>
-      <p class="lead">Pegue mensajes o fotos de pedidos (también hojas escritas a mano). Claude los lee y usted los revisa antes de guardar.</p>
-      <div class="field"><label for="pCli">Cliente <span style="font-weight:500;color:var(--muted)">(si el mensaje o la foto no lo dice)</span></label><input id="pCli" list="pCliList" placeholder="Ej. Samara Sushi" autocomplete="off"><datalist id="pCliList"></datalist></div>
-      <textarea id="pIn" placeholder="Pegue aquí los pedidos o una foto…"></textarea>
-      <div class="pfotos" id="pFotos" hidden></div>
-      <div class="row2"><button class="btn sec2" id="pPaste" type="button">📋 Pegar</button><button class="btn sec2" id="pFoto" type="button">📷 Foto del pedido</button><button class="btn sec2" id="pClear" type="button">Borrar texto</button><button class="btn wa" id="pRead">Leer pedidos</button></div>
+      <summary>+ Agregar pedidos que llegaron por WhatsApp</summary>
+      <p class="lead">Pegue uno o varios mensajes. Los enviados desde la app se leen al instante; los escritos a mano los interpreta Claude y usted los revisa antes de guardar.</p>
+      <textarea id="pIn" placeholder="Pegue aquí los pedidos…"></textarea>
+      <div class="row2"><button class="btn sec2" id="pPaste" type="button">📋 Pegar</button><button class="btn sec2" id="pClear" type="button">Borrar texto</button><button class="btn wa" id="pRead">Leer pedidos</button></div>
       <p class="pv-note" id="pMsg" role="status"></p>
       <div id="pPreview" class="pv" hidden></div>
     </details>
@@ -780,11 +774,11 @@ function parseStructured(txt, fallbackDate){
 const UNIT_ALIASES = {kg:"kg",kilo:"kg",kilos:"kg",g:"g",gr:"g",gramos:"g",und:"und",unidad:"und",unidades:"und",bandeja:"bandeja",bandejas:"bandeja",rollo:"rollo",rollos:"rollo",bolsa:"bolsa",bolsas:"bolsa",paquete:"paquete",paquetes:"paquete"};
 
 // --- mensajes escritos a mano: los interpreta Claude ---
-async function parseFree(txt, fallbackDate, imgs){
+async function parseFree(txt, fallbackDate){
   if(!PANEL.sample) throw {code:"no_sample"};
   const cat = P.map(p=>`${p[1]} | ${p[3].join(",")}`).join("\n");
   const prompt = `Eres el asistente de Greens Market, distribuidor de frutas y verduras en Nosara, Costa Rica.
-Convierte estos pedidos en JSON. Pueden venir como mensajes de WhatsApp y/o como FOTOS (hojas escritas a mano, capturas de pantalla). Lee con cuidado la letra a mano: "2 1/2 kilos" = 2.5 kg; si un número está corregido o sobrescrito, usa el número final.
+Convierte estos mensajes de pedidos de WhatsApp en JSON.
 
 CATÁLOGO (nombre | unidades permitidas, la primera es la habitual):
 ${cat}
@@ -797,13 +791,12 @@ REGLAS:
 - Si el producto no está en el catálogo, deja el nombre como lo escribió el cliente, en mayúscula inicial.
 - Pon en "note" pedidos especiales como "maduros", "deshojada", "que esté buena". Si una cantidad es ambigua, ponlo en "note".
 - No inventes productos ni cantidades.
-- Si el pedido no dice de qué cliente es, deja "negocio" vacío. Una hoja o foto sin encabezados es UN solo pedido.
 
 Responde SOLO con JSON: {"pedidos":[{"negocio":"","area":"","items":[{"n":"","q":0,"u":"","note":""}]}]}
 
 MENSAJES:
-${txt||"(sin texto; el pedido está en las fotos)"}`;
-  const res = await PANEL.sample.json(prompt,(imgs&&imgs.length)?{images:imgs,modelTier:"complex",cache:false}:{modelTier:"complex"});
+${txt}`;
+  const res = await PANEL.sample.json(prompt,{modelTier:"complex"});
   const list = (res && Array.isArray(res.pedidos)) ? res.pedidos : [];
   return list.map(p=>({
     negocio:String(p.negocio||"").trim(), area:String(p.area||"").trim(), pide:"", fecha:fallbackDate, fuente:"claude",
@@ -969,26 +962,13 @@ async function commitPreview(){
   try{
     for(const o of pv){ await PANEL.db.collection("pedidos").add({...o, clave:clientKey(o.negocio,o.area), items:o.items.map(({unknown,...r})=>r), creado:new Date().toISOString()}); }
     toast(`${pv.length} pedido(s) guardado(s)`);
-    PANEL.preview=null; $("#pIn").value=""; $("#pCli").value=""; PANEL.pFotos=[]; pintarFotos(); renderPreview();
+    PANEL.preview=null; $("#pIn").value=""; renderPreview();
     if(pv[0].fecha!==$("#dDate").value){ $("#dDate").value=pv[0].fecha; subscribeDay(); }
   }catch(e){ toast(e && e.code==="quota_exceeded" ? "Se llenó el espacio de pedidos. Borre días viejos." : "No se pudo guardar. Revise su conexión e intente de nuevo."); }
 }
-PANEL.pFotos=[];
-function pintarFotos(){ const box=$("#pFotos"); box.innerHTML=""; box.hidden=!PANEL.pFotos.length;
-  PANEL.pFotos.forEach((f,k)=>{ const d=document.createElement("div"); d.className="ft"; const im=document.createElement("img"); im.alt="Foto del pedido "+(k+1); im.src=URL.createObjectURL(f);
-    const x=document.createElement("button"); x.type="button"; x.textContent="✕"; x.setAttribute("aria-label","Quitar foto"); x.onclick=()=>{ PANEL.pFotos.splice(k,1); pintarFotos(); };
-    d.append(im,x); box.appendChild(d); }); }
-function agregarFotos(fs){ const ok=[...fs].filter(f=>f&&/^image\//.test(f.type)); if(!ok.length) return false;
-  const max=PANEL.imgMax||1; PANEL.pFotos=PANEL.pFotos.concat(ok).slice(0,max); pintarFotos();
-  $("#pMsg").textContent = ok.length+" foto(s) lista(s). Toque «Leer pedidos»."+(PANEL.pFotos.length>=max&&max>1?" (máximo "+max+")":""); return true; }
-$("#pIn").addEventListener("paste",e=>{ const fs=[...(e.clipboardData&&e.clipboardData.files||[])]; if(fs.length&&agregarFotos(fs)) e.preventDefault(); });
-$("#pFoto").onclick=()=>{ const inp=document.createElement("input"); inp.type="file"; inp.accept="image/*"; inp.multiple=true; inp.onchange=()=>agregarFotos(inp.files); inp.click(); };
-function llenarClientes(){ const dl=$("#pCliList"); if(!dl) return; const ns=[...new Set((PANEL.clients||[]).map(c=>c.negocio).filter(Boolean))].sort(); dl.innerHTML=ns.map(n=>`<option value="${n.replace(/"/g,"&quot;")}">`).join(""); }
-$("#pCli").addEventListener("focus",llenarClientes);
 $("#pPaste").onclick=async()=>{
   const ta=$("#pIn"), st=$("#pMsg");
   try{
-    if(navigator.clipboard.read){ try{ const its=await navigator.clipboard.read(); const fs=[]; for(const it of its){ const ty=it.types.find(t=>t.startsWith("image/")); if(ty){ const bl=await it.getType(ty); fs.push(new File([bl],"pedido."+ty.split("/")[1],{type:ty})); } } if(fs.length&&agregarFotos(fs)) return; }catch(e){} }
     const t=await navigator.clipboard.readText();
     if(!t||!t.trim()){ st.textContent="No hay nada copiado. Copie primero el pedido en WhatsApp."; ta.focus(); return; }
     ta.value = ta.value.trim() ? ta.value.replace(/\s*$/,"")+"\n\n"+t : t;
@@ -998,25 +978,21 @@ $("#pPaste").onclick=async()=>{
     st.textContent="Su celular no deja pegar con el botón: mantenga presionado dentro del cuadro y toque «Pegar».";
   }
 };
-$("#pClear").onclick=()=>{ $("#pIn").value=""; $("#pMsg").textContent=""; PANEL.pFotos=[]; pintarFotos(); $("#pIn").focus(); };
+$("#pClear").onclick=()=>{ $("#pIn").value=""; $("#pMsg").textContent=""; $("#pIn").focus(); };
 $("#pRead").onclick=async()=>{
-  const txt=$("#pIn").value.trim(); const date=$("#dDate").value; const fotos=PANEL.pFotos.slice();
-  if(!txt&&!fotos.length){ toast("Pegue primero los pedidos o una foto"); return; }
+  const txt=$("#pIn").value.trim(); const date=$("#dDate").value;
+  if(!txt){ toast("Pegue primero los pedidos"); return; }
   const st=$("#pMsg"); st.textContent="";
-  let res=fotos.length?[]:parseStructured(txt,date);
-  if(!res.length&&!fotos.length) res=parseFreeLocal(txt,date);
+  let res=parseStructured(txt,date);
+  if(!res.length) res=parseFreeLocal(txt,date);
   if(!res.length){
-    if(!PANEL.sample){ st.textContent="Para leer pedidos escritos a mano o en foto hay que permitir que Claude los interprete."; return; }
+    if(!PANEL.sample){ st.textContent="Este texto no viene de la app. Para leer pedidos escritos a mano hay que permitir que Claude los interprete."; return; }
     const b=$("#pRead"); b.disabled=true; b.textContent="Claude está leyendo los pedidos…";
-    try{ res=await parseFree(txt,date,fotos); }
+    try{ res=await parseFree(txt,date); }
     catch(e){ st.textContent = e && e.code==="not_granted" ? "Falta dar permiso para que Claude lea los pedidos." : e && e.code==="rate_limited" ? "Demasiadas lecturas seguidas. Espere un momento." : "No se pudieron leer. Intente de nuevo o revise el texto."; }
     b.disabled=false; b.textContent="Leer pedidos";
   }
-  if(!res.length){ if(!st.textContent) st.textContent="No se encontraron productos."; return; }
-  const cli=$("#pCli").value.trim();
-  if(cli) res.forEach(o=>{ if(!o.negocio||res.length===1) o.negocio=cli; });
-  const tel=cli&&(PANEL.clients||[]).find(c=>norm(c.negocio||"")===norm(cli)); if(tel) res.forEach(o=>{ if(o.negocio===cli&&!o.tel) o.tel=tel.tel; });
-  if(fotos.length) res.forEach(o=>o.fuente="foto");
+  if(!res.length){ if(!st.textContent) st.textContent="No se encontraron productos en el texto."; return; }
   PANEL.preview=res; renderPreview();
 };
 

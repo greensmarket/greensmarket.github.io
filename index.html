@@ -156,6 +156,9 @@ input[type="date"]::-webkit-date-and-time-value{text-align:left}
 .pf-pl{min-height:40px;padding:0 16px;border-radius:999px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font-weight:700;font-size:.92rem}
 .pf-pl[aria-pressed="true"]{background:var(--leaf);border-color:var(--leaf);color:var(--leaf-ink)}
 .pf-pl.add{border-style:dashed;border-color:var(--leaf);color:var(--leaf);background:transparent}
+.pf-pl-pick{display:flex;flex-direction:column;gap:8px;background:var(--bg);border:1px dashed var(--line);border-radius:14px;padding:12px}
+.pf-pl.opt{background:var(--surface)}
+.pf-pl-pick .linkbtn{align-self:flex-start}
 .pf-pl-add{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .pf-pl-add input{flex:1 1 160px;min-height:42px;border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:0 12px;font:inherit;font-size:16px;color:var(--ink)}
 .pf-pl-add .btn{grid-column:auto}
@@ -415,7 +418,12 @@ img{-webkit-user-drag:none;pointer-events:none}
       <div class="pf-places">
         <span class="pf-pl-lbl">¿Para cuál es este pedido?</span>
         <div class="pf-pl-list" id="pfPlaces" role="group" aria-label="Escoger para cuál es el pedido"></div>
-        <form class="pf-pl-add" id="pfPlAdd" hidden><input id="pfPlName" maxlength="40" placeholder="Ej. Cocina, Bar, Casa" aria-label="Nombre de la nueva casilla"><button class="btn wa small" type="submit">Guardar</button><button class="linkbtn" type="button" id="pfPlCancel">Cancelar</button></form>
+        <div class="pf-pl-pick" id="pfPlPick" hidden>
+          <span class="pf-pl-lbl">Toque una para agregarla</span>
+          <div class="pf-pl-list" id="pfPlOpts"></div>
+          <form class="pf-pl-add" id="pfPlAdd" hidden><input id="pfPlName" maxlength="40" placeholder="Escriba el nombre" aria-label="Nombre de la nueva casilla"><button class="btn wa small" type="submit">Guardar</button></form>
+          <button class="linkbtn" type="button" id="pfPlCancel">Cancelar</button>
+        </div>
       </div>
     </section>
     <section class="client" id="clientForm" aria-label="Datos del pedido">
@@ -930,18 +938,26 @@ $("#btnTheme").onclick=()=>{ const t=THEMES[(THEMES.indexOf(store.get("tema")||"
 // ===== Casillas: varios pedidos con el mismo nombre y celular (ej. Casa, Cocina, Bar) =====
 const telKey=t=>String(t||"").replace(/\D/g,"");
 function casillasDe(p){ return perfiles().filter(x=>telKey(x.t)===telKey(p.t)&&norm(x.p)===norm(p.p)); }
+const CASILLAS=["Cocina","Bar","Restaurante","Panadería #1","Panadería #2","Casa","Bodega","Local"];
 function renderCasillas(p){
   const L=$("#pfPlaces"); if(!L) return; L.innerHTML="";
-  casillasDe(p).forEach(x=>{ const b=document.createElement("button"); b.type="button"; b.className="pf-pl"; b.textContent=x.n; b.setAttribute("aria-pressed",String(x.id===p.id));
+  const mias=casillasDe(p);
+  mias.forEach(x=>{ const b=document.createElement("button"); b.type="button"; b.className="pf-pl"; b.textContent=x.n; b.setAttribute("aria-pressed",String(x.id===p.id));
     b.onclick=()=>{ if(x.id!==p.id) usarPerfil(x); }; L.appendChild(b); });
-  const a=document.createElement("button"); a.type="button"; a.className="pf-pl add"; a.textContent="+ Agregar"; a.onclick=()=>{ $("#pfPlAdd").hidden=false; a.hidden=true; $("#pfPlName").value=""; $("#pfPlName").focus(); }; L.appendChild(a);
-  $("#pfPlAdd").hidden=true;
+  const a=document.createElement("button"); a.type="button"; a.className="pf-pl add"; a.textContent="+ Agregar"; a.onclick=()=>abrirOpciones(p,a); L.appendChild(a);
+  $("#pfPlPick").hidden=true; $("#pfPlAdd").hidden=true;
 }
-$("#pfPlAdd").addEventListener("submit",e=>{ e.preventDefault(); const act=activo(); if(!act) return;
-  const n=$("#pfPlName").value.trim(); if(!n){ $("#pfPlName").focus(); return; }
+function abrirOpciones(p,a){
+  const O=$("#pfPlOpts"); O.innerHTML=""; const tengo=new Set(casillasDe(p).map(x=>norm(x.n)));
+  CASILLAS.filter(n=>!tengo.has(norm(n))).forEach(n=>{ const b=document.createElement("button"); b.type="button"; b.className="pf-pl opt"; b.textContent=n; b.onclick=()=>agregarCasilla(n); O.appendChild(b); });
+  const ot=document.createElement("button"); ot.type="button"; ot.className="pf-pl opt"; ot.textContent="Otros…"; ot.onclick=()=>{ $("#pfPlAdd").hidden=false; $("#pfPlName").value=""; $("#pfPlName").focus(); }; O.appendChild(ot);
+  $("#pfPlPick").hidden=false; $("#pfPlAdd").hidden=true; if(a) a.hidden=true;
+}
+function agregarCasilla(n){ const act=activo(); if(!act) return; n=String(n||"").trim(); if(!n){ $("#pfPlName").focus(); return; }
   let L=perfiles(); const ya=L.find(x=>telKey(x.t)===telKey(act.t)&&norm(x.p)===norm(act.p)&&norm(x.n)===norm(n));
   if(ya){ usarPerfil(ya); return; }
-  const id="p"+Date.now().toString(36); const nuevo={id,n,p:act.p,t:act.t}; L.push(nuevo); store.set("perfiles",L); usarPerfil(nuevo); });
+  const id="p"+Date.now().toString(36); const nuevo={id,n,p:act.p,t:act.t}; L.push(nuevo); store.set("perfiles",L); usarPerfil(nuevo); }
+$("#pfPlAdd").addEventListener("submit",e=>{ e.preventDefault(); agregarCasilla($("#pfPlName").value); });
 $("#pfPlCancel").onclick=()=>{ const act=activo(); if(act) renderCasillas(act); };
 // ===== Datos obligatorios =====
 function faltan(){ const m=[];

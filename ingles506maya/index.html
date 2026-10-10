@@ -1085,7 +1085,7 @@ $("#composer").addEventListener("submit",e=>{e.preventDefault();send();});
 function renderAll(){renderHeader();renderChat();renderScenes();renderPhrases();}
 renderAll();
 if(sampleState==="nokey"){addSys("Bienvenido, Miguel. Para que Maya pueda hablar contigo, pega tu llave de la API de Claude en Ajustes (solo se hace una vez).");setTimeout(openSettings,600);}
-if("serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(()=>{});}
+if("serviceWorker" in navigator&&location.protocol==="https:"){let rl=false;navigator.serviceWorker.addEventListener("controllerchange",()=>{if(rl)return;rl=true;location.reload();});navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(r=>{const up=()=>r.update().catch(()=>{});up();document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")up();});}).catch(()=>{});}
 })();
 </script>
 </body>

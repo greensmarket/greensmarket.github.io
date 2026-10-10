@@ -1,7 +1,7 @@
-const CACHE = "greens-market-v30";
+const CACHE = "greens-market-v31";
 const FILES = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png", "favicon.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
-self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(k => Promise.all(k.filter(n => n !== CACHE).map(n => caches.delete(n))))); self.clients.claim(); });
+self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(k => Promise.all(k.filter(n => n.startsWith("greens-market-") && n !== CACHE).map(n => caches.delete(n))))); self.clients.claim(); });
 // Red primero, para que siempre vea la versión más nueva; sin señal, abre la guardada.
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;

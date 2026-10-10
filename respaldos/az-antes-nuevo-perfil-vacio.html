@@ -845,11 +845,7 @@ function showPerfil(on){
     renderCasillas(p);
   }
 }
-let pfPrev=null;
-// Un negocio o persona nueva empieza con la lista vacía; la lista del anterior queda guardada en su casilla
-function nuevoPerfil(){ save(); pfPrev=store.get("perfilActivo"); pfModo="nuevo"; store.set("perfil",false);
-  if(pfPrev){ store.set("perfilActivo",null); cart={}; custom=[]; refresh(); }
-  cargarPerfil(null); showPerfil(false); $("#cNegocio").focus(); }
+function nuevoPerfil(){ pfModo="nuevo"; store.set("perfil",false); cargarPerfil(null); showPerfil(false); $("#cNegocio").focus(); }
 function guardarPerfil(){
   if(!datosOk()){ marcarFaltan(); return false; }
   const d={n:$("#cNegocio").value.trim(),p:$("#cNombre").value.trim(),t:$("#cTel").value.trim()};
@@ -860,12 +856,10 @@ function guardarPerfil(){
   if(pfModo==="editar"&&act){ id=act.id; L=L.map(x=>x.id===id?{...x,...d}:x); }
   else if(igual){ id=igual.id; L=L.map(x=>x.id===id?{...x,...d}:x); }
   else { id="p"+Date.now().toString(36); L.push({id,...d}); }
-  store.set("perfiles",L); store.set("perfilActivo",id); store.set("perfil",true);
-  if(pfModo==="nuevo"&&pfPrev&&igual){ leerLista(id); refresh(); }
-  pfModo=null; pfPrev=null; save(); showPerfil(true); return true;
+  store.set("perfiles",L); store.set("perfilActivo",id); store.set("perfil",true); pfModo=null; save(); showPerfil(true); return true;
 }
 $("#btnSavePf").onclick=()=>{ const n=perfiles().length; if(guardarPerfil()) toast(perfiles().length>n?"Perfil guardado en este teléfono.":"Cambios guardados."); };
-$("#btnCancelPf").onclick=()=>{ pfModo=null; if(pfPrev&&!store.get("perfilActivo")){ store.set("perfilActivo",pfPrev); leerLista(pfPrev); refresh(); } pfPrev=null; const p=activo(); cargarPerfil(p); store.set("perfil",!!p); showPerfil(!!p); };
+$("#btnCancelPf").onclick=()=>{ pfModo=null; const p=activo(); cargarPerfil(p); store.set("perfil",!!p); showPerfil(!!p); };
 $("#btnEditPf").onclick=()=>{ cerrarSelector(); pfModo="editar"; store.set("perfil",false); showPerfil(false); $("#cNegocio").focus(); };
 $("#btnForget").onclick=function(){
   const p=activo(); if(!p) return;

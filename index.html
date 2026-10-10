@@ -72,6 +72,8 @@ button{cursor:pointer}
 .qpill:active{background:var(--sunk)}
 @media (max-width:440px){.logo img{height:44px}}
 @media (max-width:360px){.qpill{font-size:.72rem;padding:0 8px}.logo img{height:38px}}
+.duenobar{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 16px 10px;padding:10px 14px;border-radius:999px;background:var(--ink);color:var(--bg);font-weight:700;font-size:.9rem;text-decoration:none}
+.duenobar[hidden]{display:none}
 .tabs{display:flex;background:var(--sunk);border-radius:999px;padding:3px}
 .tabs button{border:0;background:transparent;padding:7px 13px;border-radius:999px;font-weight:600;font-size:.85rem;color:var(--muted)}
 .tabs .tablink{text-decoration:none;padding:7px 13px;border-radius:999px;font-weight:600;font-size:.85rem;color:var(--leaf)}
@@ -374,6 +376,7 @@ img{-webkit-user-drag:none;pointer-events:none}
     </div>
   </div>
 
+  <a class="duenobar" id="duenoBar" href="https://claude.ai/artifact/GB6Fic6qnK97K1rgqcLLiX" target="_blank" rel="noopener" hidden><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Abrir mi Panel</a>
   <p class="netbar" id="netBar" hidden role="status">Sin señal · su pedido se guarda en este teléfono y lo puede enviar cuando vuelva la conexión.</p>
 <div class="scrim" id="pfPicker" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pkTitle">
@@ -1452,6 +1455,13 @@ function isoDay(t){ return `${t.getFullYear()}-${String(t.getMonth()+1).padStart
     const owner = user ? ((await user.isOwner()) || (await user.canEdit())) : false;
     if(owner){ $("#tabPanel").hidden=false; $("#tabsBox").hidden=false; }
   }catch(e){}
+})();
+// ===== Modo dueño: 5 toques seguidos al logo muestran/ocultan el botón Panel en este teléfono =====
+function aplicarDueno(){ const b=$("#duenoBar"); if(b) b.hidden=!store.get("dueno"); }
+aplicarDueno();
+(function(){ const lg=document.querySelector(".brand .logo"); if(!lg) return; let n=0,t=0;
+  lg.addEventListener("click",()=>{ const now=Date.now(); n = (now-t<1500) ? n+1 : 1; t=now;
+    if(n>=5){ n=0; const on=!store.get("dueno"); store.set("dueno",on); aplicarDueno(); toast(on?"Botón Panel activado en este teléfono":"Botón Panel ocultado"); } });
 })();
 
 // ===== Sin señal =====

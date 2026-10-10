@@ -157,10 +157,6 @@ input[type="date"]::-webkit-date-and-time-value{text-align:left}
 .addbox summary{font-weight:700;color:var(--leaf);cursor:pointer}
 .addbox .lead{font-size:.85rem}
 .addbox textarea{min-height:130px}
-.autoav{border:1.5px solid var(--danger);background:color-mix(in srgb,var(--danger) 8%,var(--surface));border-radius:var(--r);padding:12px 14px;margin:0 0 12px}
-.autoav h3{margin:0 0 6px;font-size:.98rem;color:var(--danger)}.autoav ul{margin:0;padding-left:18px;font-size:.9rem}.autoav p{margin:6px 0 0;font-size:.82rem;color:var(--muted)}
-.autoav.ok{border-color:var(--line);background:var(--surface)}.autoav.ok h3{color:var(--leaf)}
-small.fix{display:block;font-size:.72rem;color:var(--muted)}
 .addbox .field{margin:0 0 10px}.addbox .field label{display:block;font-size:.8rem;font-weight:700;margin-bottom:4px}
 .addbox .field input{width:100%;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:11px 12px;font:inherit;color:var(--ink)}
 .pfotos{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.pfotos .ft{position:relative}.pfotos img{width:72px;height:72px;object-fit:cover;border-radius:10px;border:1px solid var(--line);display:block}
@@ -303,7 +299,6 @@ img{-webkit-user-drag:none;pointer-events:none}
       <input type="date" id="dDate" aria-label="Día de entrega">
       <button class="dbtn" id="dNext" aria-label="Día siguiente">›</button>
     </div>
-    <section class="autoav" id="autoAviso" hidden aria-live="polite"></section>
     <p class="live wait" id="liveState" role="status" onclick="askTallyOnce()"></p>
     <details class="addbox rem" id="remBox"></details>
     <details class="addbox" id="addBox">
@@ -1115,9 +1110,7 @@ function mergeDay(){
   const d=$("#dDate").value;
   PANEL.orders=[...PANEL.dbOrders,...PANEL.tally].filter(o=>o.fecha===d && !PANEL.hiddenIds.has(o.id))
     .sort((a,b)=>(a.negocio||"").localeCompare(b.negocio||"","es")||String(a.creado).localeCompare(String(b.creado)));
-  PANEL.orders.forEach(o=>(o.items||[]).forEach(i=>fixItem(i,o)));
-  renderDay(); renderLive(); renderNew(); renderClients(); renderAviso();
-  clearTimeout(PANEL.autoT); PANEL.autoT=setTimeout(autoResolver,1200);
+  renderDay(); renderLive(); renderNew(); renderClients();
 }
 function deepStrings(o,out){ out=out||[]; if(typeof o==="string") out.push(o); else if(Array.isArray(o)) o.forEach(x=>deepStrings(x,out)); else if(o&&typeof o==="object") Object.values(o).forEach(x=>deepStrings(x,out)); return out; }
 function findSubs(p){
@@ -1243,9 +1236,6 @@ function qtyQupos(i){ if(i.u==="g") return {q:Math.round(i.q)/1000,u:"kg"}; retu
 const qUnits = p => [...new Set(p.u.map(u=>u==="g"?"kg":u))];
 // Cómo se factura cada línea: con su unidad si Qupos la tiene; si no, por kilo (se pesa).
 function bill(i){ const p=prodOf(i.n); const C=PANEL.codigos;
-  if(!p && i.qcode){ if(!i.qkg) return {code:i.qcode,u:i.u,q:i.q,weigh:false};
-    if(i.u==="kg") return {code:i.qcode,u:"kg",q:i.q,weigh:true,ordKg:true}; if(i.u==="g") return {code:i.qcode,u:"kg",q:Math.round(i.q)/1000,weigh:true,ordKg:true};
-    return {code:i.qcode,u:"kg",q:null,weigh:true,ordKg:false}; }
   if(!p) return {code:"",u:i.u,q:i.q,weigh:false};
   if(i.u==="g") return {code:C[p.id+"|kg"]||"",u:"kg",q:Math.round(i.q)/1000,weigh:true,ordKg:true};
   if(i.u==="kg") return {code:C[p.id+"|kg"]||"",u:"kg",q:i.q,weigh:true,ordKg:true};
@@ -1253,95 +1243,6 @@ function bill(i){ const p=prodOf(i.n); const C=PANEL.codigos;
   if(C[p.id+"|kg"]) return {code:C[p.id+"|kg"],u:"kg",q:null,weigh:true,ordKg:false};
   return {code:"",u:i.u,q:i.q,weigh:false}; }
 function codeOf(i){ return bill(i).code; }
-// ===== Corrección automática contra la lista de Qupos =====
-// Cada producto que sube un cliente se revisa solo: si está mal escrito se corrige al nombre de la lista;
-// si le falta el código de Qupos se busca en la lista de Qupos; si de verdad no existe en Qupos, se marca y se avisa.
-const QUPOS=[["1","ACELGA UND"],["2","AGUACATE CAJA 10K"],["00046","AGUACATE CAJA NACIONAL 10KG"],["3","AGUACATE KG"],["00047","AGUACATE NACIONAL KG"],["4","AGUACATE UND"],["5","AJO 1X3 KG"],["6","AJO MALLA UND"],["7","AJO PELADO 250G"],["8","AJO PELADO CAJA"],["9","AJO PELADO ENVASE 500G"],["10","AJO PELADO KG"],["12","AJO TRENZA"],["11","AJO TRENZA CAJA"],["13","ALBAHACA KG"],["14","ALBAHACA ROLLO"],["15","ALFALFA BANDEJA"],["00074","AMARANTO BANDEJA"],["00033","APIO RAMITA UND"],["16","APIO VERDE KG"],["17","ARANDANO BANDEJA 125G"],["18","ARANDANOS CAJA (12 UND)"],["00016","ARBOL DE CIPRES"],["00075","ARRACACHE KG"],["19","ARUGULA KG"],["20","ARUGULA UND"],["21","ARVEJA CHINA BOLSA"],["22","AYOTE ESMERALDA"],["23","AYOTE MANTEQUILLA KG"],["25","AYOTE SAZON"],["24","AYOTE SAZON KG"],["26","AYOTE TIERNO"],["27","BANANO BANDEJA"],["00018","BANANO COCINA UND"],["28","BANANO UND"],["00062","BANDEJA DE ALBAHACA MORADA"],["29","BERENJENA UND"],["30","BERROS BANDEJA"],["31","BROCOLI KG"],["00078","BROTES CULANTRO BANDEJA"],["32","CAMOTE KG"],["00088","CAMOTE ZANAHORIA KG"],["33","CARAMBOLA KG"],["34","CAS"],["35","CEBOLLA BLANCA KG"],["36","CEBOLLA MORADA KG"],["37","CEBOLLINO UND"],["38","CEREZA"],["00108","CHAN KG"],["00068","CHAYOTE CRIOLLO KG"],["39","CHAYOTE CRIOLLO UND"],["40","CHAYOTE QUELITE UND"],["41","CHERRY BANDEJA"],["00057","CHERRY COLORES BANDEJA"],["42","CHERRY KG"],["00063","CHERRY VERDES BAND"],["44","CHILE AJI PERUANO BANDEJA"],["45","CHILE AJI PERUANO KILO"],["00058","CHILE CALIFORNIA KG"],["00059","CHILE CAYENNE KG"],["00023","CHILE DE ARBOL BANDEJA"],["00102","CHILE DE ARBOL SECO KG"],["00091","CHILE DULCE KG"],["46","CHILE DULCE UND"],["00103","CHILE GUAJIRO SECO KG"],["00101","CHILE HABANERO KG"],["47","CHILE JALAPENO BANDEJA"],["48","CHILE JALAPENO KG"],["00027","CHILE MUNDIAL"],["49","CHILE PANAMENO BANDEJA"],["50","CHILE PANAMENO KG"],["00104","CHILE PASA SECO KG"],["00026","CHILE ROCOTTO"],["51","CHILE SECO"],["00053","CHILOTE BANDEJA"],["52","CIRUELA KG"],["00115","CLAVO DE OLOR"],["00076","COCOS UND"],["53","COLIFLOR UND"],["54","CULANTRO CASTILLA 1X10"],["55","CULANTRO CASTILLA ROLLO"],["00019","CULANTRO COYOTE ROLLO"],["56","CULANTRO COYOTE ROLLO 1X10"],["57","CURCUMA KG"],["58","ELOTE MINI BANDEJA"],["59","ELOTE UND"],["60","ENELDO KG"],["61","ENELDO UND"],["62","ENSALADA PREPADARA"],["63","ESCALOPIN BANDEJA"],["64","ESPARRAGOS ROLLO"],["65","ESPINACA KG"],["00022","ESPINACA UND"],["00086","ESTRAGON KG"],["66","ESTRAGON UND"],["00050","FLOR DE JAIMACA 100g"],["67","FLORES COMESTIBLES UND"],["00093","FRAMBUESA"],["68","FRESA BANDEJA 400G"],["167","FRESA CONGELADA KG"],["69","FRESA KG"],["00054","FRIJOL BLANCO BANDEJA"],["70","FRIJOL NACIDO BANDEJA"],["71","FRIJOLES TIERNOS BANDEJA"],["00038","GARBANZO KG"],["72","GRANADILLA UND"],["00011","GUANABANA KG"],["00095","GUANILAMA UND"],["00010","GUAYABA KG"],["73","HIERBA BUENA KG"],["74","HIERBA BUENA ROLLO"],["75","HINOJO"],["76","HOJA DE PLATANO KG"],["00080","HOJAS DE JOCOTE"],["77","HONGO BLANCO BANDEJA"],["00090","HONGO CRIMINI BANDEJA"],["00084","HONGO OSTRA BANDEJA"],["78","HONGO PORTOBELLO"],["79","HUEVOS CARTON 30UND"],["80","HUEVOS MEDIO CARTON"],["00034","JAMAICA KG"],["81","JENGIBRE KG"],["00040","JUGO DE TORONJA GALON"],["00083","JUGO LIMON GALON"],["82","KALE KG"],["00089","KALE TOSCANA KG"],["83","KALE TOSCANE UND"],["84","KALE UND"],["85","KIWI KG"],["86","LECHUGA AMERICANA UND"],["00024","lechuga arrepollada"],["87","LECHUGA BOSTON UND"],["00037","LECHUGA DESHOJADA KG"],["88","LECHUGA ESCAROLA"],["169","LECHUGA FRISSE"],["00021","LECHUGA ICEBERG UND"],["89","LECHUGA LOLOROSA UND"],["90","LECHUGA ROMANA UND"],["168","LECHUGA SALANOVA ROJA"],["00055","LIMA KG"],["91","LIMON LIMA"],["92","LIMON MANDARINA"],["93","LIMON MESINO UND"],["94","MAIZ DULCE BANDEJA"],["96","MALANGA KG"],["97","MANDARINA IMPORT KG"],["98","MANDARINA KG"],["99","MANGO KG"],["100","MANZANA GALA PAQ 1X6"],["101","MANZANA GALA UND"],["102","MANZANA GOLDEN UND"],["103","MANZANA GRANNY UND"],["104","MANZANA ROJA UND"],["105","MANZANILLA ROLLO"],["106","MARACUYA KG"],["107","MELOCOTON KG"],["108","MELON CANTALOUPE KG"],["109","MENTA ROLLO"],["110","MICROGREEN BANDEJA"],["00066","MIEL DE ABEJA BOTELLA"],["00097","MINI VAINICA BOLSA"],["111","MINI ZANAHORIA BANDEJA"],["00015","MINI ZANAHORIA COLORES BAND"],["112","MINI ZUCCHINI"],["113","MIX VEGETALES MINI BANDEJA"],["114","MORA BANDEJA 200G"],["115","MORA BRASSO BAND 250G"],["116","MOSTAZA CHINA UND"],["117","NABOS UND"],["118","NAMPI KG"],["00079","NARANAJA NAVEL KG"],["119","NARANJA IMPORTADA KG"],["120","NARANJA UND"],["00100","NARANJILLA KG"],["121","OREGANO 1X5 UND"],["00032","OREGANO KG"],["00017","PAK CHOYS UND"],["00070","PALMITO KG"],["00056","PALMITO UND"],["00031","PAPA AMARILLA KG"],["00041","PAPA BURRA KG"],["122","PAPA KG"],["123","PAPA MINI KG"],["00035","PAPA MORADA KG"],["124","PAPA ROJA KG"],["125","PAPAYA KG"],["00073","PEJIBAYE KG"],["00036","PEJIBAYE RACIMO"],["126","PEPINO KG"],["127","PERA UND"],["128","PEREJIL 1X5"],["00043","PEREJIL ITALIANO 1X5"],["129","PEREJIL ITALIANO KG"],["130","PEREJIL KG"],["131","PEREJIL ROLLO UND"],["00099","PIMIENTA JAMAICA"],["132","PINA DORADA UND"],["133","PIPA UND"],["134","PITAHAYA ROJA KG"],["135","PLATANO MADURO UND"],["136","PLATANO VERDE UND"],["137","POMELO KG"],["138","PUERRO UND"],["140","RABANITO KG"],["00020","RABANITO UND"],["00064","RABANO BALNCO KG"],["00092","RADICCHIO BANDEJA"],["141","REMOLACHA UND"],["143","REPOLLO MORADO KG"],["142","REPOLLO VERDE KG"],["144","ROMERO KG"],["145","ROMERO UND"],["00067","RUCULA KG"],["00030","RUDA UND"],["146","SALVIA ROLLO"],["147","SANDIA KG"],["00071","SEMILLAS GIRASOL KG"],["00025","SNACKS"],["00049","TAMARINDO 250G"],["148","TAMARINDO BOLA 500G"],["149","TAMARINDO KG"],["150","TIQUIZQUE KG"],["00051","TOMATE ARBOL"],["151","TOMATE KG"],["152","TOMATE MEXICANO"],["153","TOMATE PERA BANDEJA"],["00087","TOMATE PERA KG"],["166","TOMATE SALADETTE"],["00060","TOMATE SEGUNDA KG"],["00085","TOMATE TERCERA"],["154","TOMILLO 1X5"],["155","TOMILLO KG"],["00042","TOMILLO UND"],["156","UCHUVA BANDEJA"],["157","UVA NEGRA KG"],["158","UVA ROJA KG"],["159","UVA VERDE KG"],["160","VAINICA BOLSA 500G"],["161","VAINICA KG"],["162","VAINICA MINI KG"],["00069","VERDOLAGA KG"],["163","YUCA KG"],["00044","ZACATE LIMON"],["164","ZANAHORIA KG"],["00098","ZAPOTE KG"],["165","ZUCCHINI UND"]];
-const QDESC=Object.fromEntries(QUPOS);
-PANEL.alias={}; PANEL.autoTried=new Set(); PANEL.autoBusy=false; PANEL.avisados=new Set();
-const NOUNIT=new Set(["und","unidad","unidade","kg","kilo","g","gr","gramo","x"]);
-const toks=w=>norm(w).replace(/(\d)([a-z])/g,"$1 $2").replace(/[^a-z0-9ñ]+/g," ").split(" ").filter(x=>x&&!STOP.has(x)).map(stem).filter(x=>!NOUNIT.has(x));
-function localMatch(n){ const t=new Set(toks(n)); if(!t.size) return null; let best=[],bl=0;
-  P.forEach(p=>{ const pt=toks(p[1]); if(pt.length&&pt.every(x=>t.has(x))&&t.size-pt.length<=1){ if(pt.length>bl){best=[p];bl=pt.length;} else if(pt.length===bl) best.push(p);} });
-  return best.length===1?BY[best[0][0]]:null; }
-function saveAlias(){ if(!PANEL.db) return; clearTimeout(PANEL.aliasT); PANEL.aliasT=setTimeout(()=>PANEL.db.doc("config/alias").set({map:PANEL.alias}).catch(()=>{}),600); }
-function fixItem(i,o){
-  if(prodOf(i.n)){ const p=prodOf(i.n); if(bill(i).code){ i.estado="ok"; return; }
-    const a=PANEL.alias["#"+p.id+"|"+i.u]; i.estado = a&&a.none ? "noqupos" : "codigo"; return; }
-  const k=norm(i.n).trim(); const a=PANEL.alias[k];
-  if(a&&a.id&&BY[a.id]){ i.orig=i.orig||i.n; i.n=BY[a.id].n; return fixItem(i,o); }
-  if(a&&a.code){ i.qcode=a.code; i.qkg=!!a.kg; i.estado="ok"; return; }
-  if(a&&a.none){ i.estado="noqupos"; return; }
-  const m=localMatch(i.n); if(m){ PANEL.alias[k]={id:m.id}; saveAlias(); i.orig=i.n; i.n=m.n; return fixItem(i,o); }
-  i.estado="nombre";
-}
-function pendientes(){ const out={};
-  PANEL.orders.forEach(o=>o.items.forEach(i=>{
-    if(i.estado==="nombre"){ const k=norm(i.n).trim(); if(!PANEL.autoTried.has(k)) out[k]={ref:k,tipo:"nombre",escrito:i.n,unidad:i.u}; }
-    else if(i.estado==="codigo"){ const p=prodOf(i.n); const k="#"+p.id+"|"+i.u; if(!PANEL.autoTried.has(k)) out[k]={ref:k,tipo:"codigo",producto:p.n,unidad:i.u}; } }));
-  return Object.values(out); }
-async function autoResolver(){
-  if(PANEL.autoBusy||!PANEL.sample) return; const list=pendientes(); if(!list.length) return;
-  PANEL.autoBusy=true; list.forEach(x=>PANEL.autoTried.add(x.ref)); renderAviso();
-  const cat=P.map(p=>`${p[0]} | ${p[1]} | ${p[3].join(",")}`).join("\n");
-  const qp=QUPOS.map(([c,d])=>`${c} | ${d}`).join("\n");
-  const prompt=`Usted ayuda a Greens Market (frutas y verduras, Costa Rica) a facturar en Qupos.
-Hay productos de pedidos de clientes que no se pudieron reconocer solos. Para cada uno decida:
-- tipo "nombre": el cliente escribió un producto. Si es claramente un producto del CATÁLOGO (aunque esté mal escrito, en plural, con otra palabra o con la presentación), devuelva su id en "catalogo". Si no está en el catálogo pero SÍ existe en la LISTA DE QUPOS, devuelva el código en "qupos" y "kg": true si el artículo de Qupos se vende por KG.
-- tipo "codigo": el producto ya está en el catálogo pero le falta el código de Qupos para esa unidad. Busque en la LISTA DE QUPOS el artículo que corresponde a ese producto en esa unidad (UND, KG, bandeja, rollo, paquete...). Si en Qupos solo existe por KG, devuelva ese código con "kg": true.
-- Si de verdad no existe en Qupos (ni algo equivalente), devuelva catalogo null y qupos null.
-- "seguro": false si duda entre varias opciones.
-No invente códigos: solo use códigos que estén en la lista.
-
-CATÁLOGO (id | nombre | unidades):
-${cat}
-
-LISTA DE QUPOS (código | descripción):
-${qp}
-
-PRODUCTOS A REVISAR (JSON):
-${JSON.stringify(list)}
-
-Responda SOLO un arreglo JSON: [{"ref":"...","catalogo":"id o null","qupos":"código o null","kg":true|false,"seguro":true|false}]`;
-  try{
-    const res=await PANEL.sample.json(prompt,{modelTier:"complex",cache:false});
-    (Array.isArray(res)?res:[]).forEach(r=>{ const x=list.find(y=>y.ref===r.ref); if(!x) return;
-      const code=r.qupos&&QDESC[String(r.qupos)]?String(r.qupos):null;
-      if(x.tipo==="nombre"){
-        if(r.catalogo&&BY[r.catalogo]){ PANEL.alias[x.ref]={id:r.catalogo,auto:true,seguro:r.seguro!==false};
-          const u=BY[r.catalogo].u.includes(x.unidad)?x.unidad:null; if(code&&u&&!PANEL.codigos[r.catalogo+"|"+u]&&!r.kg) setCodigo(r.catalogo+"|"+u,code); if(code&&r.kg&&!PANEL.codigos[r.catalogo+"|kg"]) setCodigo(r.catalogo+"|kg",code); }
-        else if(code) PANEL.alias[x.ref]={code,kg:!!r.kg,desc:QDESC[code],n:x.escrito,auto:true,seguro:r.seguro!==false};
-        else PANEL.alias[x.ref]={none:true,n:x.escrito};
-      } else {
-        const [id,u]=x.ref.slice(1).split("|");
-        if(code) setCodigo(r.kg?id+"|kg":id+"|"+u,code); else PANEL.alias[x.ref]={none:true,n:x.producto+" ("+u+")"};
-      }
-    });
-    saveAlias();
-  }catch(e){ list.forEach(x=>PANEL.autoTried.delete(x.ref)); }
-  PANEL.autoBusy=false; mergeDay();
-}
-function renderAviso(){
-  const box=$("#autoAviso"); if(!box) return;
-  const malos=[], arreglados=[];
-  PANEL.orders.forEach(o=>o.items.forEach(i=>{ const who=(o.negocio||"Sin nombre")+(o.area?" · "+o.area:"");
-    if(i.estado==="noqupos") malos.push({n:i.n,who}); else if(i.orig){ const a=PANEL.alias[norm(i.orig).trim()]; if(a&&a.seguro===false) arreglados.push({de:i.orig,a:i.n,who}); } }));
-  const pend=PANEL.orders.some(o=>o.items.some(i=>i.estado==="nombre"||i.estado==="codigo"));
-  box.innerHTML=""; box.className="autoav"+(malos.length?"":" ok");
-  if(!malos.length&&!pend&&!arreglados.length){ box.hidden=true; return; }
-  box.hidden=false;
-  const h=document.createElement("h3");
-  h.textContent = malos.length ? `⚠ ${malos.length} producto(s) no están en Qupos` : (PANEL.autoBusy?"Revisando productos contra Qupos…":"Hay productos por revisar contra Qupos");
-  box.appendChild(h);
-  if(malos.length){ const ul=document.createElement("ul"); malos.forEach(m=>{ const li=document.createElement("li"); li.textContent=`${m.n} — ${m.who}`; ul.appendChild(li); }); box.appendChild(ul);
-    const p=document.createElement("p"); p.textContent="Créelos en Qupos (o cámbielos por otro producto) antes de facturar. Están marcados en rojo en Facturar."; box.appendChild(p);
-    malos.forEach(m=>{ const k=m.n+"|"+m.who; if(!PANEL.avisados.has(k)){ PANEL.avisados.add(k); toast("⚠ No está en Qupos: "+m.n+" ("+m.who+")"); } }); }
-  else if(pend&&!PANEL.sample){ const p=document.createElement("p"); p.textContent="Dé permiso a Claude en esta página para revisarlos solo."; box.appendChild(p); }
-  if(arreglados.length){ const h2=document.createElement("h3"); h2.style.color="var(--ink)"; h2.style.marginTop=malos.length?"10px":"0"; h2.textContent="Corregidos — confirme que estén bien"; box.appendChild(h2);
-    if(!malos.length&&!pend) h.remove();
-    const ul=document.createElement("ul"); arreglados.forEach(m=>{ const li=document.createElement("li"); li.textContent=`${m.who}: escribió «${m.de}» → ${m.a}`; ul.appendChild(li); }); box.appendChild(ul); }
-}
-
 const weighs = i => bill(i).weigh;
 // Pesos reales anotados por los empacadores (por día)
 PANEL.pesos={}; let pesoUnsub=null, pesoTimer=null;
@@ -1533,8 +1434,7 @@ function renderFacturar(groups,out){
         avisar.href=`https://wa.me/${telDigits(o.tel)}?text=${encodeURIComponent(L.join("\n"))}`; avisar.textContent="Avisar faltantes al cliente"; avisar.hidden=false; }
       else avisar.hidden=true; };
     facLines(o).forEach(i=>{ const tr=document.createElement("tr"); tr.innerHTML="<td><span class='pn'></span><small class='cod'></small></td><td class='q'></td><td class='q'></td>"; const p=prodOf(i.n); const b=bill(i);
-      tr.children[0].firstChild.textContent=i.n+(i.note?" ("+i.note+")":""); tr.children[0].lastChild.textContent=b.code?"Qupos "+b.code+(b.u!==i.u?" · "+uLbl(b.u,2):""):(i.estado==="noqupos"?"⚠ No está en Qupos":"Buscando código…");
-      if(i.orig){ const fx=document.createElement("small"); fx.className="fix"; fx.textContent="Corregido · el cliente escribió: "+i.orig; tr.children[0].appendChild(fx); } tr.children[1].textContent=`${fmtQ(i.q)} ${uLbl(i.u,i.q)}`;
+      tr.children[0].firstChild.textContent=i.n+(i.note?" ("+i.note+")":""); tr.children[0].lastChild.textContent=b.code?"Qupos "+b.code+(b.u!==i.u?" · "+uLbl(b.u,2):""):"Sin código"; tr.children[1].textContent=`${fmtQ(i.q)} ${uLbl(i.u,i.q)}`;
       const k=pesoKey(o,i); const cur=PANEL.pesos[k];
       const inp=document.createElement("input"); inp.className="peso"+(b.weigh?" w":""); inp.inputMode="decimal"; inp.enterKeyHint="next";
       inp.placeholder=b.weigh?(b.ordKg?fmtQ(b.q):"kg"):fmtQ(b.q); inp.value=cur!=null?fmtQ(cur):""; inp.setAttribute("aria-label",(b.weigh?"Peso real en kg de ":"Cantidad que vino de ")+i.n);
@@ -1544,7 +1444,7 @@ function renderFacturar(groups,out){
       nv.onclick=()=>{ const on=PANEL.pesos[k]!==0; setPeso(k,on?"0":""); inp.value=on?"0":""; paint(); upd(); };
       inp.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); const all=[...document.querySelectorAll("input.peso.w")]; const nx=all[all.indexOf(inp)+1]; nx?nx.focus():inp.blur(); } };
       const box=document.createElement("div"); box.className="fq"; box.append(inp,nv); tr.children[2].appendChild(box); paint();
-      if(!p&&!b.code) tr.children[0].firstChild.className="pn unk"; if(!b.code) tr.children[0].lastChild.className="cod unk"; t.tBodies[0].appendChild(tr); });
+      if(!p) tr.children[0].firstChild.className="pn unk"; if(!b.code) tr.children[0].lastChild.className="cod unk"; t.tBodies[0].appendChild(tr); });
     upd(); c.appendChild(cnt);
     const w=document.createElement("div"); w.className="tblwrap"; w.appendChild(t); c.appendChild(w);
     const miss=quposRows(o).missing; if(miss.length){ const w2=document.createElement("p"); w2.className="pv-note unk"; w2.textContent=`Sin código de Qupos: ${miss.join(", ")}`; c.appendChild(w2); }
@@ -1900,9 +1800,6 @@ function isoDay(t){ return `${t.getFullYear()}-${String(t.getMonth()+1).padStart
     watchCodigos();
     watchBorrados();
     db.collection("clientes").onSnapshot(sn=>{ PANEL.clients=sn.docs.map(d=>({id:d.id,...d.data()})); const first=!PANEL.clientsLoaded; PANEL.clientsLoaded=true; renderClients(); if(first&&PANEL.tally.length) syncClients(PANEL.tally); },()=>{});
-    db.doc("config/alias").onSnapshot(sn=>{ const d=sn.exists?sn.data():null; PANEL.alias=(d&&d.map)||{}; mergeDay(); },()=>{});
-    (async()=>{ try{ const cat=P.map(p=>[p[0],p[1],p[3]]); const h=hashStr(JSON.stringify(cat)+QUPOS.length);
-      const r=db.doc("config/catalogo"); let un=null; un=r.onSnapshot(sn=>{ if(un){ un(); un=null; } else setTimeout(()=>un&&un(),0); if(!sn.exists||(sn.data()||{}).h!==h) r.set({h,items:cat,qupos:QUPOS}).catch(()=>{}); },()=>{}); }catch(e){} })();
     db.doc("config/ocultos").onSnapshot(sn=>{ const d=sn.exists?sn.data():null; PANEL.hiddenIds=new Set((d&&d.ids)||[]); mergeDay(); },()=>{});
     subscribeDay();
     tab("panel");

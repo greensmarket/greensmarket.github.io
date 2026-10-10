@@ -790,23 +790,11 @@ function refresh(){ try{ aplicarDueno(); }catch(e){}
 // ===== Producto fuera de lista =====
 Object.entries(UNITS).forEach(([k,v])=>{ const o=document.createElement("option"); o.value=k; o.textContent=v.pl||v.l; $("#xUnit").appendChild(o); });
 $("#xUnit").value="und";
-// Si el cliente escribe un producto que ya está en la lista (ej. "Huevo cartón de 30und"), se usa el de la lista
-function buscarEnLista(n){
-  const NO=new Set(["und","unidad","unidade","kg","kilo","g","gr","gramo","x"]);
-  const T=w=>norm(w).replace(/(\d)([a-z])/g,"$1 $2").replace(/[^a-z0-9ñ]+/g," ").split(" ").filter(x=>x&&!STOP.has(x)).map(stem).filter(x=>!NO.has(x));
-  const t=new Set(T(n)); if(!t.size) return null; let best=[],bl=0;
-  P.forEach(p=>{ const pt=T(p[1]); if(pt.length&&pt.every(x=>t.has(x))&&t.size-pt.length<=1){ if(pt.length>bl){best=[p];bl=pt.length;} else if(pt.length===bl) best.push(p);} });
-  return best.length===1?BY[best[0][0]]:null;
-}
 $("#xAdd").onclick=()=>{
   const n=$("#xName").value.trim(); const q=parseFloat(String($("#xQty").value).replace(",","."));
   if(!n){ toast("Escriba el nombre del producto"); $("#xName").focus(); return; }
   if(!(q>0)){ toast("Indique la cantidad"); return; }
-  const uSel=$("#xUnit").value; const m=buscarEnLista(n);
-  if(m){ const u=m.u.includes(uSel)?uSel:m.u[0]; const prev=cart[m.id]&&cart[m.id].u===u?cart[m.id].q:0;
-    cart[m.id]={q:prev+q,u,note:(cart[m.id]&&cart[m.id].note)||(u!==uSel?`pidió ${q} ${uSel}`:"")};
-    $("#xName").value=""; $("#xQty").value="1"; save(); refresh(); toast("Ya está en la lista: "+m.n+" ✓"); return; }
-  custom.push({id:"x"+Date.now(),n,q,u:uSel,note:""});
+  custom.push({id:"x"+Date.now(),n,q,u:$("#xUnit").value,note:""});
   $("#xName").value=""; $("#xQty").value="1"; save(); refresh(); toast("Agregado: "+n);
 };
 

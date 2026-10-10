@@ -1501,6 +1501,7 @@ document.addEventListener("dragstart",e=>{ if(e.target.tagName==="IMG") e.preven
 })();
 </script>
 
-<script>if("serviceWorker" in navigator){ addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{})); }</script>
+<script>if("serviceWorker" in navigator){ let recargo=false; navigator.serviceWorker.addEventListener("controllerchange",()=>{ if(recargo) return; recargo=true; location.reload(); });
+addEventListener("load",()=>navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(r=>{ const up=()=>r.update().catch(()=>{}); up(); document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") up(); }); }).catch(()=>{})); }</script>
 </body>
 </html>

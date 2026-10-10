@@ -808,10 +808,12 @@ function refresh(){ try{ aplicarDueno(); }catch(e){}
 Object.entries(UNITS).forEach(([k,v])=>{ const o=document.createElement("option"); o.value=k; o.textContent=v.pl||v.l; $("#xUnit").appendChild(o); });
 $("#xUnit").value="und";
 // Si el cliente escribe un producto que ya está en la lista (ej. "Huevo cartón de 30und"), se usa el de la lista
+const FRASES=[[/\bnaranjas?\s+internacional(es)?\b/g,"naranja importada"],[/\bbrotes?\b(?!\s+de\b)/g,"microgreens mixtos"],[/\bmangas?\b/g,"mango"],[/\belotes?\b/g,"maiz dulce"]];
+const frases=s=>{ let t=norm(s); FRASES.forEach(([r,v])=>{ t=t.replace(r,v); }); return t; };
 function buscarEnLista(n){
   const NO=new Set(["und","unidad","unidade","kg","kilo","g","gr","gramo","x"]);
   const T=w=>norm(w).replace(/(\d)([a-z])/g,"$1 $2").replace(/[^a-z0-9ñ]+/g," ").split(" ").filter(x=>x&&!STOP.has(x)).map(stem).filter(x=>!NO.has(x));
-  const t=new Set(T(n)); if(!t.size) return null; let best=[],bl=0;
+  const t=new Set(T(frases(n))); if(!t.size) return null; let best=[],bl=0;
   P.forEach(p=>{ const pt=T(p[1]); if(pt.length&&pt.every(x=>t.has(x))&&t.size-pt.length<=1){ if(pt.length>bl){best=[p];bl=pt.length;} else if(pt.length===bl) best.push(p);} });
   return best.length===1?BY[best[0][0]]:null;
 }

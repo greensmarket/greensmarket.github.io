@@ -659,8 +659,11 @@ const norm = s => (s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
 const fmtQ = q => { const r = Math.round(q*100)/100; return String(r).replace(".",","); };
 const unitLabel = (u,q) => { const d = UNITS[u]; return (q!==1 && d.pl) ? d.pl : d.l; };
 
+// La lista de productos se guarda por casilla (cada negocio o departamento tiene la suya)
+function listaKey(){ const a=store.get("perfilActivo"); return a?"draft_"+a:"draft"; }
+function leerLista(id){ const d=store.get(id?"draft_"+id:"draft")||{}; cart=d.cart||{}; custom=d.custom||[]; Object.keys(cart).forEach(k=>{ if(!BY[k]) delete cart[k]; }); }
 function save(){
-  store.set("draft",{cart,custom});
+  store.set(listaKey(),{cart,custom});
   store.set("client",{n:$("#cNegocio").value,a:$("#cArea").value,p:$("#cNombre").value,t:$("#cTel").value});
 }
 function itemsCount(){ return Object.keys(cart).length + custom.length; }
@@ -913,7 +916,7 @@ function abrirSelector(){
     L.appendChild(b); });
   $("#pfPicker").hidden=false;
 }
-function usarPerfil(x){ store.set("perfilActivo",x.id); cargarPerfil(x); store.set("perfil",true); showPerfil(true); updateLinks();
+function usarPerfil(x){ save(); store.set("perfilActivo",x.id); leerLista(x.id); cargarPerfil(x); refresh(); if(typeof filterCat!=="undefined"&&filterCat==="__mine"&&!itemsCount()){ filterCat=""; renderAisles(); renderCatalog(); } store.set("perfil",true); showPerfil(true); updateLinks();
   if(!$("#scrim").hidden) renderReview();
   const c=$("#profileCard"); c.classList.remove("flash"); void c.offsetWidth; c.classList.add("flash");
   toast("Ahora el pedido es para: "+x.n); }
@@ -1023,8 +1026,12 @@ document.addEventListener("keydown",e=>{ if(e.key!=="Escape") return; if(!$("#pf
 $("#btnSend").addEventListener("click",e=>{
   if(navigator.onLine===false){ e.preventDefault(); toast("Sin señal. Su pedido quedó guardado; envíelo cuando vuelva la conexión."); return; }
   if(marcarFaltan()){ e.preventDefault(); return; }
+  const enviado={cart:JSON.parse(JSON.stringify(cart)),custom:JSON.parse(JSON.stringify(custom))}; const para=$("#cNegocio").value.trim();
   setTimeout(()=>guardarPerfil(),400);
-  store.set("last",{cart,custom}); markSent(); setTimeout(()=>{ toast("Toque “Enviar” en la página que se abrió para confirmar"); },700);
+  store.set("last",enviado); markSent();
+  // Después de enviar, la lista de esta casilla queda vacía para el próximo pedido (se puede recuperar con "Repetir último pedido")
+  setTimeout(()=>{ const a=store.get("perfilActivo"); if(a) store.set("last_"+a,enviado); cart={}; custom=[]; save(); refresh(); closeSheet(); $("#repeatBox").hidden=false;
+    toast("Pedido para "+para+" listo. Toque “Enviar” en la página que se abrió. Su lista quedó vacía para el próximo pedido."); },900);
 });
 $("#btnWA").addEventListener("click",e=>{ if(marcarFaltan()){ e.preventDefault(); return; } store.set("last",{cart,custom}); setTimeout(()=>toast("Si WhatsApp no abrió, use “Copiar pedido”"),900); });
 $("#btnCopy").onclick=()=>marcarFaltan()||copy(message(),"Pedido copiado. Péguelo en WhatsApp.");
@@ -1051,7 +1058,7 @@ let tt,tt2; function toast(t){ const el=$("#toast"); const warn=/^(para |no |sin
 
 // ===== Repetir último =====
 $("#btnRepeat").onclick=()=>{
-  const l=store.get("last"); if(!l) return;
+  const a=store.get("perfilActivo"); const l=(a&&store.get("last_"+a))||store.get("last"); if(!l) return;
   cart=JSON.parse(JSON.stringify(l.cart||{})); custom=JSON.parse(JSON.stringify(l.custom||[]));
   Object.keys(cart).forEach(k=>{ if(!BY[k]) delete cart[k]; });
   save(); filterCat="__mine"; renderAisles(); refresh(); toast("Último pedido cargado. Ajuste cantidades.");
@@ -1467,7 +1474,7 @@ document.addEventListener("dragstart",e=>{ if(e.target.tagName==="IMG") e.preven
 })();
 // ===== Inicio =====
 (function init(){
-  const d=store.get("draft"); if(d){ cart=d.cart||{}; custom=d.custom||[]; Object.keys(cart).forEach(k=>{ if(!BY[k]) delete cart[k]; }); }
+  { const a=store.get("perfilActivo"); if(a&&!store.get("draft_"+a)&&store.get("draft")) store.set("draft_"+a,store.get("draft")); leerLista(a||null); }
   const c=store.get("client"); if(c){ $("#cNegocio").value=c.n||""; $("#cArea").value=""; $("#cNombre").value=c.p||""; $("#cTel").value=c.t||""; }
   $("#cFecha").value=isoDay(nextDelivery()); $("#cHoy").value=isoDay(new Date()); $("#entregaTxt").textContent="Entrega: "+fechaTxt().replace(",","");
   if(store.get("last")) $("#repeatBox").hidden=false;

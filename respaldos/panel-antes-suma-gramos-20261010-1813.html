@@ -1209,11 +1209,7 @@ function totals(){
   rows.sort((a,b)=> (GROUP_BY_CAT ? ((ord[a.c]??99)-(ord[b.c]??99)) : 0) || a.n.localeCompare(b.n,"es",{sensitivity:"base"}));
   return rows;
 }
-// Gramos y kilos del mismo producto se suman en una sola cantidad (500 g + 1 kg = 1,5 kg)
-const qtyTxt = t => { const u={...t.u};
-  if(u.g){ if(u.kg||u.g>=1000){ u.kg=Math.round(((u.kg||0)+u.g/1000)*1000)/1000; delete u.g; } }
-  const ents=Object.entries(u); if(t.u.g&&!t.u.kg&&u.kg){ ents.sort((a,b)=>(a[0]==="kg"?-1:0)); }
-  return ents.map(([un,q])=>`${fmtQ(q)} ${uLbl(un,q)}`).join(" + "); };
+const qtyTxt = t => Object.entries(t.u).map(([u,q])=>`${fmtQ(q)} ${uLbl(u,q)}`).join(" + ");
 function totalText(){
   const d=$("#dDate").value; let s=`*PEDIDO TOTAL — GREENS MARKET*\nEntrega: ${dayTxt(d)} · ${groupOrders(PANEL.orders).length} clientes\n`;
   let cur=null;

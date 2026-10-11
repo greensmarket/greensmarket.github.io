@@ -1761,8 +1761,8 @@ const GRID_FITS=[{cols:4,fs:10.5,rh:6},{cols:4,fs:10,rh:5.6},{cols:4,fs:9.5,rh:5
 const PAGE={W:297,H:210,M:8};
 function sheetData(groups){
   return groups.map((o,gi)=>({
-    title:(o.negocio||"Sin nombre")+(o.area?" "+o.area:""),
-    sub:"",
+    title:(/^pedido\b/i.test(o.negocio||"")?o.negocio:`Pedido ${gi+1} · ${o.negocio||"Sin nombre"}`)+(o.area?" · "+o.area:""),
+    sub:[o.pide?"Pide: "+o.pide:"",o.tel?"Tel: "+o.tel:"",`${o.items.length} productos`].filter(Boolean).join(" · "),
     items:[...o.items].sort((a,b)=>a.n.localeCompare(b.n,"es")).map(i=>({t:`${fmtQ(i.q)} ${uLbl(i.u,i.q)} ${i.n}${i.note?" ("+i.note+")":""}${i.added?" *":""}${pideP(i)?" Peso:____":""}`,unk:!BYNAME[norm(i.n)]}))
   }));
 }
@@ -1792,7 +1792,7 @@ function gridLayout(data,P,availH,ms){
     });
     if(row>0) row++; // fila vacía entre pedidos
     if(row+2+Math.min(3,lines.length)>ROWS) nextCol();
-    put(g.title,"head"); if(g.sub) put(g.sub,"sub");
+    put(g.title,"head"); put(g.sub,"sub");
     lines.forEach(l=>{
       if((l.blk && l.blk<ROWS-4 && row+l.blk>ROWS) || row>=ROWS){ nextCol(); put(g.title+" (sigue)","head"); }
       put(l.t,l.k,{unk:l.unk});

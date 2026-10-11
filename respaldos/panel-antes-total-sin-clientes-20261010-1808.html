@@ -1758,7 +1758,7 @@ function sheetData(groups){
 function totalData(groups){
   const tot=totals();
   return [{title:"Pedido total",sub:`${groups.length} clientes · ${tot.length} productos`,
-    items:tot.map(r=>({t:`${qtyTxt(r)} ${r.n}`,unk:!BYNAME[norm(r.n)]}))}];
+    items:tot.map(r=>({t:`${qtyTxt(r)} ${r.n}`,d:r.who.join(" · "),unk:!BYNAME[norm(r.n)]}))}];
 }
 function measurer(){
   const c=document.createElement("canvas").getContext("2d"); let fs=10;

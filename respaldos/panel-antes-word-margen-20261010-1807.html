@@ -1830,7 +1830,7 @@ async function pdfFlow(data,title,filename){
 async function pdfSheet(groups){ await pdfFlow(sheetData(groups),"Pedidos del día",`Greens-Market-Pedidos-${$("#dDate").value}.pdf`); }
 async function pdfTotal(groups){ await pdfFlow(totalData(groups),"Pedido total",`Greens-Market-Pedido-total-${$("#dDate").value}.pdf`); }
 // Word: misma cuadrícula, una tabla por hoja
-const DOCX_AVAIL=210-16-32; // margen extra: Word dibuja la letra un poco más grande
+const DOCX_AVAIL=210-16-17;
 function docxFlow(data,title,filename){
   const d=$("#dDate").value; const P=pickGrid(data,DOCX_AVAIL); const L=gridLayout(data,P,DOCX_AVAIL,measurer());
   const tw=v=>Math.round(v*56.7), sz=Math.round(P.fs*2), ssz=Math.round(Math.max(6.5,P.fs-2.2)*2), dsz=Math.round(Math.max(6.5,P.fs-2)*2);

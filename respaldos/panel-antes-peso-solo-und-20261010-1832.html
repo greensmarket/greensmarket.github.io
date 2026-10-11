@@ -1419,8 +1419,6 @@ function renderAviso(){
 }
 
 const weighs = i => bill(i).weigh;
-// "Peso:____" solo cuando se pidió por unidad (u otra presentación) y en Qupos se cobra por kilo. Lo pedido en kg o g se factura tal cual.
-const pideP = i => { const b=bill(i); return b.weigh && !b.ordKg; };
 // Pesos reales anotados por los empacadores (por día)
 PANEL.pesos={}; let pesoUnsub=null, pesoTimer=null;
 const pesoKey=(o,i)=>o.key+"#"+norm(i.n)+"#"+i.u;
@@ -1600,7 +1598,7 @@ function renderFacturar(groups,out){
     const t=document.createElement("table"); t.className="tot fac"; t.innerHTML="<thead><tr><th>Producto · código</th><th>Pedido</th><th>Factura</th></tr></thead><tbody></tbody>";
     const cnt=document.createElement("p"); cnt.className="pv-note";
     const avisar=document.createElement("a"); avisar.className="btn sec2 small"; avisar.target="_blank"; avisar.rel="noopener"; avisar.hidden=true;
-    const upd=()=>{ const ws=facLines(o).filter(i=>pideP(i)&&PANEL.pesos[pesoKey(o,i)]!==0); const faltan=ws.filter(i=>!PANEL.pesos[pesoKey(o,i)]);
+    const upd=()=>{ const ws=facLines(o).filter(i=>weighs(i)&&PANEL.pesos[pesoKey(o,i)]!==0); const faltan=ws.filter(i=>!PANEL.pesos[pesoKey(o,i)]);
       const nv=facLines(o).filter(i=>PANEL.pesos[pesoKey(o,i)]===0); const mn=facLines(o).filter(i=>{ const v=PANEL.pesos[pesoKey(o,i)]; return v>0 && !weighs(i) && v<i.q; });
       const parts=[]; if(ws.length) parts.push(faltan.length?`Pesos por anotar: ${faltan.length} de ${ws.length}`:`Pesos anotados ✓`); if(nv.length) parts.push(`No vino: ${nv.length}`); if(mn.length) parts.push(`Vino menos: ${mn.length}`);
       cnt.textContent=parts.join(" · "); cnt.classList.toggle("unk",faltan.length>0);
@@ -1758,7 +1756,7 @@ function sheetData(groups){
   return groups.map((o,gi)=>({
     title:(/^pedido\b/i.test(o.negocio||"")?o.negocio:`Pedido ${gi+1} · ${o.negocio||"Sin nombre"}`)+(o.area?" · "+o.area:""),
     sub:[o.pide?"Pide: "+o.pide:"",o.tel?"Tel: "+o.tel:"",`${o.items.length} productos`].filter(Boolean).join(" · "),
-    items:[...o.items].sort((a,b)=>a.n.localeCompare(b.n,"es")).map(i=>({t:`${fmtQ(i.q)} ${uLbl(i.u,i.q)} ${i.n}${i.note?" ("+i.note+")":""}${i.added?" *":""}${pideP(i)?" Peso:____":""}`,unk:!BYNAME[norm(i.n)]}))
+    items:[...o.items].sort((a,b)=>a.n.localeCompare(b.n,"es")).map(i=>({t:`${fmtQ(i.q)} ${uLbl(i.u,i.q)} ${i.n}${i.note?" ("+i.note+")":""}${i.added?" *":""}${weighs(i)?" Peso:____":""}`,unk:!BYNAME[norm(i.n)]}))
   }));
 }
 function totalData(groups){

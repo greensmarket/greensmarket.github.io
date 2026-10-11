@@ -1819,7 +1819,7 @@ async function pdfFlow(data,title,filename){
       doc.setTextColor(...(cell.k==="det"?[110,120,112]:cell.unk?[194,97,12]:[20,26,22])); doc.text(cell.t, x+L.BOX, base);
     });
     doc.setFontSize(7); doc.setTextColor(120,130,122);
-    doc.text(title==="Pedido total"?"Greens Market · +506 6366 9195   ·   [ ] marque al alistar   ·   naranja = producto nuevo   ·   Los pesos se anotan en la hoja de cada cliente":"Greens Market · +506 6366 9195   ·   [ ] marque al alistar   ·   Peso:____ anote los kilos reales   ·   * agregado después   ·   naranja = producto nuevo",M,H-4);
+    doc.text("Greens Market · +506 6366 9195   ·   [ ] marque al alistar   ·   Peso:____ anote los kilos reales   ·   * agregado después   ·   naranja = producto nuevo",M,H-4);
   });
   const n=L.pages.length; const blob=doc.output("blob");
   const dl=window.claude&&claude.use?await claude.use("downloads"):null;
@@ -1841,7 +1841,7 @@ function docxFlow(data,title,filename){
   let body="";
   L.pages.forEach((cells,pi)=>{
     const head=`<w:p><w:pPr>${pi?"<w:pageBreakBefore/>":""}<w:tabs><w:tab w:val="right" w:pos="${tw(PAGE.W-2*PAGE.M)}"/></w:tabs><w:spacing w:before="0" w:after="60"/></w:pPr>${logo?wLogoRun(1170000):""}<w:r><w:tab/></w:r>${wRun(title,{b:true,color:"517A37",sz:28})}</w:p>`
-      +`<w:p><w:pPr><w:jc w:val="right"/><w:pBdr><w:bottom w:val="single" w:sz="12" w:space="2" w:color="B1C135"/></w:pBdr><w:spacing w:before="0" w:after="100"/></w:pPr>${wRun(`Entrega: ${dayTxt(d)}   ·   Hoja ${pi+1} de ${L.pages.length}   ·   ☐ marque al alistar${title==="Pedido total"?" · los pesos van en la hoja de cada cliente":" · Peso:____ anote los kilos · * agregado después"}`,{color:"465048",sz:16})}</w:p>`;
+      +`<w:p><w:pPr><w:jc w:val="right"/><w:pBdr><w:bottom w:val="single" w:sz="12" w:space="2" w:color="B1C135"/></w:pBdr><w:spacing w:before="0" w:after="100"/></w:pPr>${wRun(`Entrega: ${dayTxt(d)}   ·   Hoja ${pi+1} de ${L.pages.length}   ·   ☐ marque al alistar · Peso:____ anote los kilos · * agregado después`,{color:"465048",sz:16})}</w:p>`;
     const grid=Array.from({length:L.ROWS},()=>Array(P.cols).fill(null));
     cells.forEach(c=>{ if(c.r<L.ROWS) grid[c.r][c.c]=c; });
     const rows=grid.map(r=>`<w:tr><w:trPr><w:trHeight w:val="${tw(P.rh)}" w:hRule="exact"/><w:cantSplit/></w:trPr>${r.map(c=>{

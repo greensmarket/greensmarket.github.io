@@ -233,6 +233,10 @@ input[type="date"]::-webkit-date-and-time-value{text-align:left}
 .pnote::placeholder{color:var(--muted)}
 .info{flex:1;min-width:0}
 .name{font-weight:600;line-height:1.25}
+.precio{font-weight:800;color:var(--leaf);font-size:.95rem;margin-top:3px;font-variant-numeric:tabular-nums}
+.sec.dest .list{border:2px solid #C8102E;box-shadow:0 6px 18px rgba(200,16,46,.12)}
+.sec.dest h2{font-size:1.25rem;margin-bottom:2px}
+.dsub{margin:0 0 10px;color:var(--muted);font-size:.85rem}
 .alias{color:var(--muted);font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .units{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
 .units button{border:1px solid var(--line);background:transparent;border-radius:7px;padding:2px 8px;font-size:.75rem;font-weight:600;color:var(--muted)}
@@ -520,7 +524,8 @@ const UNITS = {
 const CATS = [
   ["frutas","Frutas"],["citricos","Cítricos"],["berries","Berries y frutos rojos"],
   ["verduras","Verduras"],["raices","Papas, raíces y cebollas"],["mini","Mini vegetales en bandeja"],
-  ["hojas","Hojas y lechugas"],["hierbas","Hierbas frescas"],["micro","Microgreens y flores"],["hongos","Hongos"],["huevos","Huevos"]
+  ["hojas","Hojas y lechugas"],["hierbas","Hierbas frescas"],["micro","Microgreens y flores"],["hongos","Hongos"],["huevos","Huevos"],
+  ["navidad","Árboles de Navidad"]
 ];
 // [id, nombre, categoría, unidades (la primera es la sugerida), también se busca como]
 const P = [
@@ -655,7 +660,14 @@ const P = [
  ["berro-chino","Berro chino","hojas",["bandeja"],"berros"],
  ["alfalfa","Alfalfa","micro",["bandeja"],"brotes germinado"],
  ["mostaza-china","Mostaza china","hojas",["und"],"mostaza"],
+ ["arbol-cipres-2m","Árbol de Navidad ciprés natural 1,80 a 2 m","navidad",["und"],"arbol navidad cipres pino natural christmas tree"],
+ ["arbol-cipres-3m","Árbol de Navidad ciprés natural 3 m","navidad",["und"],"arbol navidad cipres pino natural christmas tree"],
+ ["arbol-cipres-maceta","Árbol de Navidad ciprés en maceta 1 m","navidad",["und"],"arbol navidad cipres pino maceta vivo christmas tree"],
 ];
+// Precios que se muestran en la app (solo productos con precio fijo)
+const PRECIOS = {"arbol-cipres-2m":"₡26.000","arbol-cipres-3m":"₡30.000","arbol-cipres-maceta":"₡27.000"};
+// Productos destacados arriba del catálogo
+const DESTACADOS = {titulo:"🎄 Árboles de Navidad", sub:"Ciprés natural · Entregas lunes y jueves, del 16 de noviembre al 3 de diciembre", ids:["arbol-cipres-2m","arbol-cipres-3m","arbol-cipres-maceta"]};
 const BY = Object.fromEntries(P.map(p=>[p[0],{id:p[0],n:p[1],c:p[2],u:p[3],a:p[4]}]));
 
 // ===== Estado =====
@@ -711,6 +723,7 @@ function rowEl(p){
   const info = document.createElement("div"); info.className = "info";
   info.innerHTML = `<div class="name"></div>`;
   info.firstChild.textContent = p.n;
+  if(PRECIOS[p.id]){ const pr=document.createElement("div"); pr.className="precio"; pr.textContent=PRECIOS[p.id]; info.appendChild(pr); }
   if(p.u.length>1){
     const us = document.createElement("div"); us.className="units";
     p.u.forEach(u=>{
@@ -773,8 +786,16 @@ function renderCatalog(){
   let items = SORTED.filter(p=> filterCat!=="__mine" || cart[p.id]).filter(p=> !q || matchQ(p,q));
   const mine = filterCat==="__mine" ? custom : [];
   let shown = items.length + mine.length;
+  const conDest = !q && filterCat==="" && DESTACADOS.ids.length;
+  if(conDest){
+    const sec=document.createElement("section"); sec.className="sec dest";
+    sec.innerHTML=`<h2></h2><p class="dsub"></p><div class="list"></div>`;
+    sec.children[0].textContent=DESTACADOS.titulo; sec.children[1].textContent=DESTACADOS.sub;
+    DESTACADOS.ids.forEach(id=>{ if(BY[id]) sec.lastChild.appendChild(rowEl(BY[id])); });
+    root.appendChild(sec);
+  }
   const groups={};
-  items.forEach(p=>{ const L=letterOf(p.n); (groups[L]=groups[L]||[]).push(p); });
+  items.filter(p=>!(conDest && DESTACADOS.ids.includes(p.id))).forEach(p=>{ const L=letterOf(p.n); (groups[L]=groups[L]||[]).push(p); });
   Object.keys(groups).sort((x,y)=>x.localeCompare(y,"es")).forEach(L=>{
     const sec=document.createElement("section"); sec.className="sec"; sec.id="L-"+L;
     sec.innerHTML=`<h2 class="letter"></h2><div class="list"></div>`;
